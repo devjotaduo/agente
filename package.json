@@ -1,0 +1,17 @@
+{
+  "name": "jotaduo-agentes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma SaaS multi-tenant de agentes de IA (jotaduo)",
+  "scripts": {
+    "dev": "pnpm --filter @jotaduo/web dev",
+    "dev:worker": "pnpm --filter @jotaduo/whatsapp-worker dev",
+    "build": "pnpm --filter @jotaduo/web build",
+    "lint": "pnpm --filter @jotaduo/web lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.0.9"
+}

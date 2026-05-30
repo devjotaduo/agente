@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install *)",
+      "Bash(pnpm --filter @jotaduo/shared typecheck)",
+      "Bash(pnpm --filter @jotaduo/web build)",
+      "Bash(pnpm --filter @jotaduo/whatsapp-worker start)",
+      "mcp__claude_ai_Supabase__get_cost",
+      "mcp__claude_ai_Supabase__confirm_cost",
+      "mcp__claude_ai_Supabase__create_project",
+      "mcp__claude_ai_Supabase__apply_migration"
+    ]
+  }
+}

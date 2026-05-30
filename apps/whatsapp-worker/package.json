@@ -1,0 +1,26 @@
+{
+  "name": "@jotaduo/whatsapp-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.1",
+    "@jotaduo/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.47.10",
+    "baileys": "^6.7.18",
+    "dotenv": "^16.4.7",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "@types/qrcode": "^1.5.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,20 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  esbuild: true
+  protobufjs: true
+  sharp: true
+
+# Baileys depende de libsignal distribuído via repositório git (dependência de
+# produção legítima). O pnpm 11 bloqueia subdeps "exóticas" por padrão; liberamos.
+blockExoticSubdeps: false
+
+# Permite rodar os scripts de build/instalação destes pacotes nativos legítimos:
+# - esbuild: binário usado pelo tsx (runner do worker)
+# - protobufjs / sharp: usados pelo Baileys (protobuf e mídia)
+onlyBuiltDependencies:
+  - esbuild
+  - protobufjs
+  - sharp
