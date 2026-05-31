@@ -23,8 +23,10 @@ export type Database = {
           is_active: boolean;
           model: string;
           owner_id: string;
+          skills: string[];
           system_prompt: string;
           template_id: string | null;
+          tone: string;
           updated_at: string;
         };
         Insert: {
@@ -34,8 +36,10 @@ export type Database = {
           is_active?: boolean;
           model?: string;
           owner_id: string;
+          skills?: string[];
           system_prompt?: string;
           template_id?: string | null;
+          tone?: string;
           updated_at?: string;
         };
         Update: {
@@ -45,8 +49,10 @@ export type Database = {
           is_active?: boolean;
           model?: string;
           owner_id?: string;
+          skills?: string[];
           system_prompt?: string;
           template_id?: string | null;
+          tone?: string;
           updated_at?: string;
         };
         Relationships: [];
@@ -210,6 +216,111 @@ export type Database = {
         };
         Relationships: [];
       };
+      instagram_connections: {
+        Row: {
+          agent_id: string;
+          ig_user_id: string | null;
+          last_error: string | null;
+          status: Database["public"]["Enums"]["ig_status"];
+          token_expires_at: string | null;
+          updated_at: string;
+          username: string | null;
+        };
+        Insert: {
+          agent_id: string;
+          ig_user_id?: string | null;
+          last_error?: string | null;
+          status?: Database["public"]["Enums"]["ig_status"];
+          token_expires_at?: string | null;
+          updated_at?: string;
+          username?: string | null;
+        };
+        Update: {
+          agent_id?: string;
+          ig_user_id?: string | null;
+          last_error?: string | null;
+          status?: Database["public"]["Enums"]["ig_status"];
+          token_expires_at?: string | null;
+          updated_at?: string;
+          username?: string | null;
+        };
+        Relationships: [];
+      };
+      instagram_secrets: {
+        Row: {
+          access_token: string;
+          agent_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          access_token: string;
+          agent_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          access_token?: string;
+          agent_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      posters: {
+        Row: {
+          agent_id: string;
+          briefing: string;
+          caption: string | null;
+          created_at: string;
+          created_by: string | null;
+          error: string | null;
+          id: string;
+          ig_media_id: string | null;
+          ig_permalink: string | null;
+          image_path: string | null;
+          image_prompt: string | null;
+          image_url: string | null;
+          published_at: string | null;
+          size: string;
+          status: Database["public"]["Enums"]["poster_status"];
+          updated_at: string;
+        };
+        Insert: {
+          agent_id: string;
+          briefing: string;
+          caption?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          error?: string | null;
+          id?: string;
+          ig_media_id?: string | null;
+          ig_permalink?: string | null;
+          image_path?: string | null;
+          image_prompt?: string | null;
+          image_url?: string | null;
+          published_at?: string | null;
+          size?: string;
+          status?: Database["public"]["Enums"]["poster_status"];
+          updated_at?: string;
+        };
+        Update: {
+          agent_id?: string;
+          briefing?: string;
+          caption?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          error?: string | null;
+          id?: string;
+          ig_media_id?: string | null;
+          ig_permalink?: string | null;
+          image_path?: string | null;
+          image_prompt?: string | null;
+          image_url?: string | null;
+          published_at?: string | null;
+          size?: string;
+          status?: Database["public"]["Enums"]["poster_status"];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -224,6 +335,14 @@ export type Database = {
         | "connected"
         | "logged_out"
         | "error";
+      ig_status: "disconnected" | "connected" | "error";
+      poster_status:
+        | "draft"
+        | "generating"
+        | "ready"
+        | "publishing"
+        | "published"
+        | "failed";
     };
     CompositeTypes: { [_ in never]: never };
   };
