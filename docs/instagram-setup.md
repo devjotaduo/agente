@@ -22,7 +22,41 @@ No Instagram: **Editar perfil → Página → conectar/criar uma Página**.
 ## 3. Criar um app na Meta for Developers
 1. Acesse https://developers.facebook.com/ e crie uma conta de desenvolvedor.
 2. **Meus Apps → Criar app → tipo "Empresa" (Business)**.
-3. No app, adicione o produto **Instagram Graph API** (ou *Instagram → API Setup with Instagram login* / *Facebook Login for Business*, conforme a tela atual da Meta).
+3. No app, adicione os produtos **Instagram Graph API** e **Facebook Login for Business**.
+
+---
+
+## ⭐ Método recomendado: OAuth "Conectar Instagram" (sem colar token)
+Com este método, no painel basta clicar **Conectar Instagram**, fazer login na Meta e
+autorizar — o sistema captura o token e o IG User ID **automaticamente**.
+
+### Configurar o app (uma vez)
+1. Em **Configurações → Básico**, copie o **App ID** e o **App Secret** e coloque no `.env`:
+   ```
+   META_APP_ID=...
+   META_APP_SECRET=...
+   # em produção: NEXT_PUBLIC_APP_URL=https://seu-dominio.com
+   ```
+2. Em **Facebook Login for Business → Configurações**, no campo
+   **Valid OAuth Redirect URIs**, adicione EXATAMENTE:
+   ```
+   http://localhost:3000/api/admin/instagram/callback      (dev)
+   https://seu-dominio.com/api/admin/instagram/callback    (produção)
+   ```
+3. Adicione seu usuário como **tester/admin** do app (Funções/Roles) enquanto ele
+   estiver em modo desenvolvimento.
+
+### Conectar
+No painel do agente → **Instagram & pôsteres → Conectar Instagram** → login + autorizar.
+Pronto: aparece **@sua_conta** conectada. (Internamente guardamos um **token de Página**,
+que não expira, para publicar.)
+
+> Se preferir o jeito manual (colar token), use a seção abaixo e o link
+> "ou colar token manualmente" no painel.
+
+---
+
+## Método manual (alternativo): colar IG User ID + token
 
 ## 4. Obter o token e o IG User ID (modo rápido com o Graph API Explorer)
 Para testar e gerar o primeiro token:

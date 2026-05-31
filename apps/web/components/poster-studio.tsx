@@ -41,6 +41,11 @@ export function PosterStudio({
   const [connLoading, setConnLoading] = useState(false);
   const [connError, setConnError] = useState<string | null>(null);
   const [showConnForm, setShowConnForm] = useState(conn.status !== "connected");
+  const [showManual, setShowManual] = useState(false);
+
+  function oauthConnect() {
+    window.location.href = `/api/admin/instagram/oauth/start?agentId=${encodeURIComponent(agentId)}`;
+  }
 
   // Geração
   const [briefing, setBriefing] = useState("");
@@ -158,42 +163,67 @@ export function PosterStudio({
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {conn.status === "error" && conn.last_error && (
+              <p className="rounded-lg bg-red-500/10 p-2 text-sm text-red-400">{conn.last_error}</p>
+            )}
             <CardDescription>
-              Cole o <span className="text-foreground">IG User ID</span> e o{" "}
-              <span className="text-foreground">token de longa duração</span> (veja o guia em{" "}
-              <span className="font-mono text-xs">docs/instagram-setup.md</span>).
+              Conecte uma conta do Instagram <span className="text-foreground">profissional</span>{" "}
+              (Empresa/Criador) que esteja vinculada a uma Página do Facebook. Você faz login na
+              Meta e autoriza — sem colar token.
             </CardDescription>
-            <div>
-              <Label htmlFor="igid">IG User ID (Business/Creator)</Label>
-              <Input
-                id="igid"
-                value={igUserId}
-                onChange={(e) => setIgUserId(e.target.value)}
-                placeholder="178414...."
-              />
-            </div>
-            <div>
-              <Label htmlFor="igtoken">Token de acesso de longa duração</Label>
-              <Input
-                id="igtoken"
-                type="password"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="EAAG..."
-              />
-            </div>
-            {connError && <p className="text-sm text-red-400">{connError}</p>}
-            <div className="flex items-center gap-2">
-              <Button onClick={connectInstagram} disabled={connLoading || !igUserId.trim() || !token.trim()}>
-                {connLoading ? "Validando…" : "Conectar Instagram"}
-              </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button onClick={oauthConnect}>Conectar Instagram</Button>
               {connected && (
                 <Button variant="ghost" onClick={() => setShowConnForm(false)}>
                   Cancelar
                 </Button>
               )}
+              <button
+                type="button"
+                onClick={() => setShowManual((v) => !v)}
+                className="text-xs text-muted underline hover:text-foreground"
+              >
+                {showManual ? "ocultar token manual" : "ou colar token manualmente"}
+              </button>
             </div>
+
+            {showManual && (
+              <div className="space-y-3 rounded-lg border border-[var(--border)] p-3">
+                <CardDescription>
+                  Alternativa: cole o <span className="text-foreground">IG User ID</span> e um{" "}
+                  <span className="text-foreground">token de longa duração</span> (veja{" "}
+                  <span className="font-mono text-xs">docs/instagram-setup.md</span>).
+                </CardDescription>
+                <div>
+                  <Label htmlFor="igid">IG User ID (Business/Creator)</Label>
+                  <Input
+                    id="igid"
+                    value={igUserId}
+                    onChange={(e) => setIgUserId(e.target.value)}
+                    placeholder="178414...."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="igtoken">Token de acesso de longa duração</Label>
+                  <Input
+                    id="igtoken"
+                    type="password"
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    placeholder="EAAG..."
+                  />
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={connectInstagram}
+                  disabled={connLoading || !igUserId.trim() || !token.trim()}
+                >
+                  {connLoading ? "Validando…" : "Conectar com token"}
+                </Button>
+              </div>
+            )}
+            {connError && <p className="text-sm text-red-400">{connError}</p>}
           </div>
         )}
       </Card>
