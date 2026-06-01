@@ -6,10 +6,10 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "bootstrap:admin": "tsx src/scripts/bootstrap-admin.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.1",
     "@jotaduo/shared": "workspace:*",
     "@supabase/supabase-js": "^2.47.10",
     "baileys": "^6.7.18",

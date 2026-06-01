@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, Label } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 interface Template {
   id: string;
@@ -20,19 +19,7 @@ interface AgentLite {
   display_name: string;
   system_prompt: string;
   model: string;
-  tone: string;
-  skills: string[];
 }
-
-const TONES = [
-  "Amigável",
-  "Formal",
-  "Descontraído",
-  "Profissional",
-  "Empático",
-  "Direto",
-  "Entusiasmado",
-];
 
 export function AgentVoiceForm({
   agent,
@@ -43,9 +30,6 @@ export function AgentVoiceForm({
 }) {
   const [displayName, setDisplayName] = useState(agent.display_name);
   const [systemPrompt, setSystemPrompt] = useState(agent.system_prompt);
-  const [tone, setTone] = useState(agent.tone ?? "");
-  const [skills, setSkills] = useState<string[]>(agent.skills ?? []);
-  const [skillInput, setSkillInput] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -57,12 +41,6 @@ export function AgentVoiceForm({
     setSystemPrompt(tpl.default_system_prompt);
   }
 
-  function addSkill() {
-    const s = skillInput.trim();
-    if (s && !skills.includes(s)) setSkills((prev) => [...prev, s]);
-    setSkillInput("");
-  }
-
   function save() {
     setSaved(false);
     setError(null);
@@ -71,8 +49,6 @@ export function AgentVoiceForm({
         id: agent.id,
         display_name: displayName,
         system_prompt: systemPrompt,
-        tone,
-        skills,
       });
       if (res.error) setError(res.error);
       else setSaved(true);
@@ -106,75 +82,14 @@ export function AgentVoiceForm({
       </div>
 
       <div>
-        <Label>Tom do agente</Label>
-        <div className="flex flex-wrap gap-2">
-          {TONES.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTone(tone === t ? "" : t)}
-              className={cn(
-                "rounded-full border px-3 py-1 text-sm transition-colors",
-                tone === t
-                  ? "border-[var(--primary)] bg-[var(--primary)]/15 text-foreground"
-                  : "border-[var(--border)] text-muted hover:bg-white/5",
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
         <Label htmlFor="voz">Voz — como o agente responde e age</Label>
         <Textarea
           id="voz"
-          rows={10}
+          rows={12}
           value={systemPrompt}
           onChange={(e) => setSystemPrompt(e.target.value)}
           placeholder="Descreva o tom, a personalidade e as regras de atendimento do agente…"
         />
-      </div>
-
-      <div>
-        <Label>Skills</Label>
-        <div className="flex gap-2">
-          <Input
-            value={skillInput}
-            onChange={(e) => setSkillInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addSkill();
-              }
-            }}
-            placeholder="Ex.: Consultar status de pedido"
-          />
-          <Button variant="secondary" onClick={addSkill} type="button">
-            Adicionar
-          </Button>
-        </div>
-        {skills.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {skills.map((s) => (
-              <span
-                key={s}
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-white/5 px-3 py-1 text-sm"
-              >
-                {s}
-                <button
-                  type="button"
-                  onClick={() => setSkills(skills.filter((x) => x !== s))}
-                  className="text-muted hover:text-foreground"
-                  aria-label={`Remover ${s}`}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="flex items-center gap-3">

@@ -5,9 +5,14 @@ export default async function ClientLayout({ children }: { children: React.React
   const profile = await requireUser();
   return (
     <Shell
-      home="/app"
+      brand="jotaduo"
       email={profile.email}
-      nav={[{ href: "/app", label: "Meu agente" }]}
+      nav={[
+        { href: "/app", label: "Meu agente" },
+        { href: "/app/settings", label: "Voz" },
+        { href: "/app/test", label: "Testar" },
+        { href: "/app/whatsapp", label: "WhatsApp" },
+      ]}
     >
       {children}
     </Shell>

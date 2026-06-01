@@ -26,35 +26,8 @@ export interface AgentConfig {
   displayName: string;
   /** A "voz": instruções de como o agente responde/age. Vira o system prompt. */
   systemPrompt: string;
-  /** Modelo do LLM (ex.: "qwen-plus"). */
+  /** Modelo Claude (ex.: "claude-haiku-4-5"). */
   model: string;
-  /** Tom de voz (ex.: "amigável", "formal"). Opcional. */
-  tone?: string;
-  /** Habilidades/competências do agente. Opcional. */
-  skills?: string[];
-  /** Dados opcionais da empresa e detalhes do template para contextualizar respostas. */
-  businessProfile?: AgentBusinessProfile | null;
-}
-
-export interface AgentCatalogItem {
-  name?: string;
-  price?: string;
-  details?: string;
-}
-
-export interface AgentBusinessProfile {
-  companyName?: string;
-  companyAddress?: string;
-  companyInfo?: string;
-  products?: AgentCatalogItem[];
-  templateNotes?: {
-    attendance?: string;
-    sales?: string;
-    postSales?: string;
-    scheduling?: string;
-    availability?: string;
-    policies?: string;
-  };
 }
 
 export interface ChatMessage {

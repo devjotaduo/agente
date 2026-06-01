@@ -17,7 +17,6 @@ export type Database = {
     Tables: {
       agents: {
         Row: {
-          business_profile: Json;
           created_at: string;
           display_name: string;
           id: string;
@@ -31,7 +30,6 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
-          business_profile?: Json;
           created_at?: string;
           display_name: string;
           id?: string;
@@ -45,7 +43,6 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
-          business_profile?: Json;
           created_at?: string;
           display_name?: string;
           id?: string;

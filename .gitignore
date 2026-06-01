@@ -34,5 +34,3 @@ picoclaw_Windows_x86_64.zip
 # baileys local auth (caso usado em dev)
 auth_info_baileys/
 *.tsbuildinfo
-
-.vercel

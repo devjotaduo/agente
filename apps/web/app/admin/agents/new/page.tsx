@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { AgentWizard } from "@/components/agent-wizard";
+import { NewAgentForm } from "@/components/new-agent-form";
 
 export default async function NewAgentPage() {
   const supabase = await createClient();
@@ -10,15 +10,18 @@ export default async function NewAgentPage() {
     .order("name");
 
   return (
+<<<<<<< HEAD
     <div className="mx-auto max-w-6xl space-y-6">
+=======
+    <div className="mx-auto max-w-2xl space-y-6">
+>>>>>>> parent of cb6ee27 (Add agent wizard, business profile & worker)
       <div>
         <h1 className="text-2xl font-semibold">Novo agente</h1>
         <p className="text-sm text-muted">
-          Siga os passos para configurar o agente e o login do cliente. Você pode navegar
-          livremente entre eles.
+          Cria o agente e o login isolado do cliente. As credenciais aparecem ao final.
         </p>
       </div>
-      <AgentWizard templates={templates ?? []} />
+      <NewAgentForm templates={templates ?? []} />
     </div>
   );
 }
