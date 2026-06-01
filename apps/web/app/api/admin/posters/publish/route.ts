@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   // 4) Conexão + token do Instagram.
   const { data: conn } = await admin
     .from("instagram_connections")
-    .select("ig_user_id, status")
+    .select("ig_user_id, status, auth_type")
     .eq("agent_id", poster.agent_id)
     .maybeSingle();
   if (!conn?.ig_user_id || conn.status !== "connected") {
@@ -67,11 +67,17 @@ export async function POST(request: Request) {
   await admin.from("posters").update({ status: "publishing", error: null }).eq("id", posterId);
 
   try {
+    const graphBase =
+      conn.auth_type === "instagram_login"
+        ? "https://graph.instagram.com/v21.0"
+        : "https://graph.facebook.com/v21.0";
+
     const result = await publishPhotoToInstagram({
       igUserId: conn.ig_user_id,
       accessToken: secret.access_token,
       imageUrl: poster.image_url,
       caption,
+      graphBase,
     });
 
     const { data: published } = await admin

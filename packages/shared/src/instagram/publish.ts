@@ -8,7 +8,8 @@
  */
 
 const GRAPH_VERSION = "v21.0";
-const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
+/** graph.facebook.com -> conexão via Página; graph.instagram.com -> login direto do IG. */
+const FACEBOOK_GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
 
 export interface PublishPhotoOptions {
   /** ID da conta Instagram Business/Creator (IG User ID). */
@@ -19,6 +20,11 @@ export interface PublishPhotoOptions {
   imageUrl: string;
   /** Legenda do post. */
   caption?: string;
+  /**
+   * Host base da Graph API, já com versão. Padrão graph.facebook.com (conexão
+   * via Página). Para login direto do Instagram use https://graph.instagram.com/v21.0.
+   */
+  graphBase?: string;
   /** Tentativas de polling do container até ficar FINISHED (padrão 10). */
   maxStatusChecks?: number;
   pollIntervalMs?: number;
@@ -39,6 +45,7 @@ export async function publishPhotoToInstagram(
     accessToken,
     imageUrl,
     caption = "",
+    graphBase = FACEBOOK_GRAPH_BASE,
     maxStatusChecks = 10,
     pollIntervalMs = 2_000,
   } = opts;
@@ -53,28 +60,28 @@ export async function publishPhotoToInstagram(
     caption,
     access_token: accessToken,
   });
-  const createJson = await graphPost(`${GRAPH_BASE}/${igUserId}/media`, createBody);
+  const createJson = await graphPost(`${graphBase}/${igUserId}/media`, createBody);
   const creationId: string | undefined = createJson?.id;
   if (!creationId) {
     throw new Error("Instagram: não retornou creation_id do container.");
   }
 
   // 2) Aguarda o container ficar pronto (FINISHED) antes de publicar.
-  await waitContainerReady(creationId, accessToken, maxStatusChecks, pollIntervalMs);
+  await waitContainerReady(graphBase, creationId, accessToken, maxStatusChecks, pollIntervalMs);
 
   // 3) Publica.
   const publishBody = new URLSearchParams({
     creation_id: creationId,
     access_token: accessToken,
   });
-  const publishJson = await graphPost(`${GRAPH_BASE}/${igUserId}/media_publish`, publishBody);
+  const publishJson = await graphPost(`${graphBase}/${igUserId}/media_publish`, publishBody);
   const mediaId: string | undefined = publishJson?.id;
   if (!mediaId) {
     throw new Error("Instagram: publicação não retornou o media_id.");
   }
 
   // 4) Busca o permalink (best-effort).
-  const permalink = await getPermalink(mediaId, accessToken).catch(() => null);
+  const permalink = await getPermalink(graphBase, mediaId, accessToken).catch(() => null);
 
   return { mediaId, permalink };
 }
@@ -83,8 +90,9 @@ export async function publishPhotoToInstagram(
 export async function fetchInstagramAccount(
   igUserId: string,
   accessToken: string,
+  graphBase: string = FACEBOOK_GRAPH_BASE,
 ): Promise<{ username: string }> {
-  const url = `${GRAPH_BASE}/${igUserId}?fields=username&access_token=${encodeURIComponent(accessToken)}`;
+  const url = `${graphBase}/${igUserId}?fields=username&access_token=${encodeURIComponent(accessToken)}`;
   const json = await graphGet(url);
   if (!json?.username) {
     throw new Error("Instagram: não foi possível ler a conta (verifique IG User ID e token).");
@@ -93,13 +101,14 @@ export async function fetchInstagramAccount(
 }
 
 async function waitContainerReady(
+  graphBase: string,
   creationId: string,
   accessToken: string,
   maxChecks: number,
   intervalMs: number,
 ): Promise<void> {
   for (let i = 0; i < maxChecks; i++) {
-    const url = `${GRAPH_BASE}/${creationId}?fields=status_code,status&access_token=${encodeURIComponent(accessToken)}`;
+    const url = `${graphBase}/${creationId}?fields=status_code,status&access_token=${encodeURIComponent(accessToken)}`;
     const json = await graphGet(url);
     const code: string = json?.status_code ?? "IN_PROGRESS";
     if (code === "FINISHED") return;
@@ -111,8 +120,12 @@ async function waitContainerReady(
   // Mesmo se ainda IN_PROGRESS, tentamos publicar; a Graph API rejeita se não estiver pronto.
 }
 
-async function getPermalink(mediaId: string, accessToken: string): Promise<string | null> {
-  const url = `${GRAPH_BASE}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`;
+async function getPermalink(
+  graphBase: string,
+  mediaId: string,
+  accessToken: string,
+): Promise<string | null> {
+  const url = `${graphBase}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`;
   const json = await graphGet(url);
   return json?.permalink ?? null;
 }
