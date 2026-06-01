@@ -56,7 +56,7 @@ export default async function AdminAgentPage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">{agent.display_name}</h1>
         <p className="text-sm text-muted">Cliente: {owner?.email ?? "—"}</p>

@@ -1,3 +1,2 @@
-// Mantido por compatibilidade: o componente foi generalizado em agent-steps.tsx
-// (suporta criar E gerenciar um agente existente).
+// Mantido por compatibilidade: o wizard de criação usa o mesmo fluxo de edição.
 export { AgentSteps as AgentWizard } from "./agent-steps";

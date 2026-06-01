@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { updateAgent } from "@/app/actions/agents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +39,7 @@ interface ConnState {
 }
 
 type Msg = { role: "user" | "assistant"; content: string };
+type TemplateNoteKey = keyof NonNullable<AgentBusinessProfile["templateNotes"]>;
 
 const TONES = [
   "Amigável",
@@ -68,13 +68,21 @@ const SKILL_SUGGESTIONS = [
   "Encaminhar para um humano",
 ];
 
-type TemplateNoteKey = keyof NonNullable<AgentBusinessProfile["templateNotes"]>;
-
 const DEFAULT_TEMPLATE_NOTES: { key: TemplateNoteKey; label: string; placeholder: string }[] = [
   {
     key: "attendance",
     label: "Regras de atendimento",
     placeholder: "Ex.: pedir número do pedido, prazo para retorno humano, canais de suporte...",
+  },
+  {
+    key: "faq",
+    label: "Perguntas frequentes",
+    placeholder: "Ex.: dúvidas comuns, respostas aprovadas, links úteis...",
+  },
+  {
+    key: "escalation",
+    label: "Quando chamar um humano",
+    placeholder: "Ex.: reclamações graves, pedido de desconto fora da regra, assuntos financeiros...",
   },
 ];
 
@@ -105,6 +113,9 @@ function normalizeBusinessProfile(value: unknown): AgentBusinessProfile {
   return {
     companyName: cleanString(value.companyName),
     companyAddress: cleanString(value.companyAddress),
+    companyPhone: cleanString(value.companyPhone),
+    companyWebsite: cleanString(value.companyWebsite),
+    openingHours: cleanString(value.openingHours),
     companyInfo: cleanString(value.companyInfo),
     products: Array.isArray(value.products)
       ? value.products.map(normalizeCatalogItem).filter((item): item is AgentCatalogItem => !!item)
@@ -116,6 +127,11 @@ function normalizeBusinessProfile(value: unknown): AgentBusinessProfile {
       scheduling: cleanString(rawNotes.scheduling),
       availability: cleanString(rawNotes.availability),
       policies: cleanString(rawNotes.policies),
+      faq: cleanString(rawNotes.faq),
+      escalation: cleanString(rawNotes.escalation),
+      delivery: cleanString(rawNotes.delivery),
+      payment: cleanString(rawNotes.payment),
+      bookingRequiredData: cleanString(rawNotes.bookingRequiredData),
     },
   };
 }
@@ -134,6 +150,16 @@ function getTemplateDetailConfig(template?: Template) {
             placeholder: "Ex.: formas de pagamento, descontos, link de compra, região atendida...",
           },
           {
+            key: "payment" as const,
+            label: "Pagamento",
+            placeholder: "Ex.: Pix, cartão, boleto, parcelamento, cobrança recorrente...",
+          },
+          {
+            key: "delivery" as const,
+            label: "Entrega ou retirada",
+            placeholder: "Ex.: frete, prazo, retirada na loja, envio digital...",
+          },
+          {
             key: "policies" as const,
             label: "Regras e limites",
             placeholder: "Ex.: quando pedir ajuda humana, política de orçamento, estoque...",
@@ -150,6 +176,11 @@ function getTemplateDetailConfig(template?: Template) {
             key: "postSales" as const,
             label: "Trocas, garantia e devoluções",
             placeholder: "Ex.: prazo de troca, documentos necessários, etapas da garantia...",
+          },
+          {
+            key: "delivery" as const,
+            label: "Entrega e acompanhamento",
+            placeholder: "Ex.: prazos, rastreio, transportadora, retirada, atrasos...",
           },
           {
             key: "policies" as const,
@@ -174,6 +205,11 @@ function getTemplateDetailConfig(template?: Template) {
             label: "Regras de agendamento",
             placeholder: "Ex.: antecedência mínima, dados necessários, remarcação, confirmação...",
           },
+          {
+            key: "bookingRequiredData" as const,
+            label: "Dados necessários",
+            placeholder: "Ex.: nome completo, telefone, serviço desejado, unidade, preferência de horário...",
+          },
         ],
       };
     case "sac":
@@ -194,14 +230,11 @@ export function AgentSteps({
   initialTestMessages = [],
 }: {
   templates: Template[];
-  /** Se presente, modo "gerenciar" (edita um agente existente). Senão, modo "criar". */
   agent?: ExistingAgent;
   connection?: ConnState;
   initialTestMessages?: Msg[];
 }) {
   const [step, setStep] = useState(1);
-
-  // Campos
   const [email, setEmail] = useState("");
   const [agentName, setAgentName] = useState(agent?.display_name ?? templates[0]?.default_agent_name ?? "");
   const [tone, setTone] = useState(agent?.tone ?? "");
@@ -215,7 +248,6 @@ export function AgentSteps({
     normalizeBusinessProfile(agent?.business_profile),
   );
 
-  // Estado de criação / persistência
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [createdLogin, setCreatedLogin] = useState<{ email: string; password: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -228,14 +260,35 @@ export function AgentSteps({
   const selectedTemplate = templates.find((x) => x.id === templateId) ?? (agent ? undefined : templates[0]);
   const templateDetail = getTemplateDetailConfig(selectedTemplate);
   const catalogItems = businessProfile.products ?? [];
+  const filledCompanyFields = [
+    businessProfile.companyName,
+    businessProfile.companyAddress,
+    businessProfile.companyPhone,
+    businessProfile.companyWebsite,
+    businessProfile.openingHours,
+    businessProfile.companyInfo,
+  ].filter((value) => value?.trim()).length;
+  const filledCatalogItems = catalogItems.filter((item) =>
+    [item.name, item.price, item.details].some((value) => value?.trim()),
+  ).length;
+  const filledTemplateNotes = Object.values(businessProfile.templateNotes ?? {}).filter((value) =>
+    value?.trim(),
+  ).length;
+  const summaryItems = [
+    { label: "Básico", value: agentName.trim() ? "Completo" : "Pendente" },
+    { label: "Template", value: selectedTemplate?.name ?? "Livre" },
+    { label: "Empresa", value: `${filledCompanyFields} campos` },
+    { label: "Catálogo", value: `${filledCatalogItems} itens` },
+    { label: "Regras", value: `${filledTemplateNotes} notas` },
+    { label: "Skills", value: `${skills.length} skills` },
+  ];
 
   function applyTemplate(id: string) {
     setTemplateId(id);
     const t = templates.find((x) => x.id === id);
-    if (t) {
-      setSystemPrompt(t.default_system_prompt);
-      if (!agentName.trim() && t.default_agent_name) setAgentName(t.default_agent_name);
-    }
+    if (!t) return;
+    setSystemPrompt(t.default_system_prompt);
+    if (!agentName.trim() && t.default_agent_name) setAgentName(t.default_agent_name);
   }
 
   function addSkill(value?: string) {
@@ -243,6 +296,7 @@ export function AgentSteps({
     if (s && !skills.includes(s)) setSkills((prev) => [...prev, s]);
     setSkillInput("");
   }
+
   function removeSkill(s: string) {
     setSkills((prev) => prev.filter((x) => x !== s));
   }
@@ -327,348 +381,439 @@ export function AgentSteps({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stepper */}
-      <div className="flex flex-wrap items-center gap-1">
-        {STEPS.map((s, i) => (
-          <div key={s.n} className="flex items-center">
-            <button
-              type="button"
-              onClick={() => setStep(s.n)}
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors",
-                step === s.n ? "bg-white/8 text-foreground" : "text-muted hover:bg-white/5",
-              )}
-            >
-              <span
-                className={cn(
-                  "grid h-6 w-6 place-items-center rounded-full text-xs font-semibold",
-                  step === s.n ? "bg-[var(--primary)] text-white" : "bg-white/5 text-muted",
-                )}
-              >
-                {s.n}
-              </span>
-              {s.label}
-            </button>
-            {i < STEPS.length - 1 && <span className="mx-1 h-px w-4 bg-[var(--border)]" />}
-          </div>
-        ))}
-      </div>
-
-      {createdLogin && (
-        <Card className="border-[var(--success)]/30 bg-[var(--success)]/5">
-          <CardTitle className="text-[var(--success)]">Agente criado ✅</CardTitle>
-          <CardDescription className="mt-1">
-            Credenciais do cliente (repasse a ele) — a senha não será exibida de novo.
-          </CardDescription>
-          <div className="mt-3 space-y-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
-            <div>
-              <span className="text-muted">E-mail: </span>
-              <span className="font-mono">{createdLogin.email}</span>
-            </div>
-            <div>
-              <span className="text-muted">Senha: </span>
-              <span className="font-mono">{createdLogin.password}</span>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Conteúdo do passo */}
-      <Card className="min-h-[280px]">
-        {step === 1 && (
-          <div className="space-y-4">
-            <CardTitle>1. Básico</CardTitle>
-            {!hasAgent && (
-              <div>
-                <Label htmlFor="email">E-mail do cliente (login)</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="cliente@empresa.com"
-                />
-              </div>
-            )}
-            <div>
-              <Label htmlFor="name">Nome do agente</Label>
-              <Input id="name" value={agentName} onChange={(e) => setAgentName(e.target.value)} placeholder="Ex.: Sofia" />
-            </div>
-            <div>
-              <Label>Tom do agente</Label>
-              <div className="flex flex-wrap gap-2">
-                {TONES.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTone(tone === t ? "" : t)}
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+      <div className="space-y-5">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-2">
+          <div className="grid gap-1 sm:grid-cols-3 lg:grid-cols-6">
+            {STEPS.map((s, i) => (
+              <div key={s.n} className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setStep(s.n)}
+                  className={cn(
+                    "flex min-h-10 w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors",
+                    step === s.n ? "bg-[var(--primary)]/15 text-foreground" : "text-muted hover:bg-white/5",
+                  )}
+                >
+                  <span
                     className={cn(
-                      "rounded-full border px-3 py-1 text-sm transition-colors",
-                      tone === t
-                        ? "border-[var(--primary)] bg-[var(--primary)]/15 text-foreground"
-                        : "border-[var(--border)] text-muted hover:bg-white/5",
+                      "grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold",
+                      step === s.n ? "bg-[var(--primary)] text-white" : "bg-white/5 text-muted",
                     )}
                   >
-                    {t}
-                  </button>
-                ))}
+                    {s.n}
+                  </span>
+                  <span className="truncate">{s.label}</span>
+                </button>
+                {i < STEPS.length - 1 && <span className="hidden" />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {createdLogin && (
+          <Card className="border-[var(--success)]/30 bg-[var(--success)]/5">
+            <CardTitle className="text-[var(--success)]">Agente criado</CardTitle>
+            <CardDescription className="mt-1">
+              Credenciais do cliente (repasse a ele) - a senha não será exibida de novo.
+            </CardDescription>
+            <div className="mt-3 space-y-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
+              <div>
+                <span className="text-muted">E-mail: </span>
+                <span className="font-mono">{createdLogin.email}</span>
+              </div>
+              <div>
+                <span className="text-muted">Senha: </span>
+                <span className="font-mono">{createdLogin.password}</span>
               </div>
             </div>
-            <div>
-              <Label htmlFor="tpl">Template</Label>
-              <select
-                id="tpl"
-                value={templateId}
-                onChange={(e) => e.target.value && applyTemplate(e.target.value)}
-                className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 text-sm"
-              >
-                {agent && <option value="">— aplicar template (opcional) —</option>}
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-muted">O template preenche a voz no passo 3. Edite livremente.</p>
-            </div>
-          </div>
+          </Card>
         )}
 
-        {step === 2 && (
-          <div className="space-y-5">
-            <div>
-              <CardTitle>2. Empresa</CardTitle>
-              <CardDescription>
-                Dados opcionais que ajudam o agente a responder com contexto real.
-              </CardDescription>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
+        <Card className="min-h-[420px]">
+          {step === 1 && (
+            <div className="space-y-4">
               <div>
-                <Label htmlFor="companyName">Nome da empresa</Label>
+                <CardTitle>1. Básico</CardTitle>
+                <CardDescription className="mt-1">Defina o acesso, o nome e a base inicial do agente.</CardDescription>
+              </div>
+
+              {!hasAgent && (
+                <div>
+                  <Label htmlFor="email">E-mail do cliente (login)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="cliente@empresa.com"
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="name">Nome do agente</Label>
                 <Input
-                  id="companyName"
-                  value={businessProfile.companyName ?? ""}
-                  onChange={(e) => updateBusinessProfile({ companyName: e.target.value })}
-                  placeholder="Ex.: Jotaduo"
+                  id="name"
+                  value={agentName}
+                  onChange={(e) => setAgentName(e.target.value)}
+                  placeholder="Ex.: Sofia"
                 />
               </div>
+
               <div>
-                <Label htmlFor="companyAddress">Endereço</Label>
-                <Input
-                  id="companyAddress"
-                  value={businessProfile.companyAddress ?? ""}
-                  onChange={(e) => updateBusinessProfile({ companyAddress: e.target.value })}
-                  placeholder="Rua, número, bairro, cidade"
-                />
+                <Label>Tom do agente</Label>
+                <div className="flex flex-wrap gap-2">
+                  {TONES.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTone(tone === t ? "" : t)}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-sm transition-colors",
+                        tone === t
+                          ? "border-[var(--primary)] bg-[var(--primary)]/15 text-foreground"
+                          : "border-[var(--border)] text-muted hover:bg-white/5",
+                      )}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="tpl">Template</Label>
+                <select
+                  id="tpl"
+                  value={templateId}
+                  onChange={(e) => applyTemplate(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 text-sm"
+                >
+                  {agent && <option value="">Aplicar template (opcional)</option>}
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-muted">O template preenche a voz e adapta os campos da empresa.</p>
               </div>
             </div>
+          )}
 
-            <div>
-              <Label htmlFor="companyInfo">Informações da empresa</Label>
+          {step === 2 && (
+            <div className="space-y-5">
+              <div>
+                <CardTitle>2. Empresa</CardTitle>
+                <CardDescription className="mt-1">
+                  Informações opcionais usadas pelo agente para responder sem inventar dados.
+                </CardDescription>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="companyName">Nome da empresa</Label>
+                  <Input
+                    id="companyName"
+                    value={businessProfile.companyName ?? ""}
+                    onChange={(e) => updateBusinessProfile({ companyName: e.target.value })}
+                    placeholder="Ex.: Jotaduo"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="companyAddress">Endereço</Label>
+                  <Input
+                    id="companyAddress"
+                    value={businessProfile.companyAddress ?? ""}
+                    onChange={(e) => updateBusinessProfile({ companyAddress: e.target.value })}
+                    placeholder="Rua, número, bairro, cidade"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <Label htmlFor="companyPhone">Telefone/WhatsApp</Label>
+                  <Input
+                    id="companyPhone"
+                    value={businessProfile.companyPhone ?? ""}
+                    onChange={(e) => updateBusinessProfile({ companyPhone: e.target.value })}
+                    placeholder="Ex.: (11) 99999-9999"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="companyWebsite">Site ou link</Label>
+                  <Input
+                    id="companyWebsite"
+                    value={businessProfile.companyWebsite ?? ""}
+                    onChange={(e) => updateBusinessProfile({ companyWebsite: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="openingHours">Horário</Label>
+                  <Input
+                    id="openingHours"
+                    value={businessProfile.openingHours ?? ""}
+                    onChange={(e) => updateBusinessProfile({ openingHours: e.target.value })}
+                    placeholder="Seg a sex, 9h às 18h"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="companyInfo">Informações da empresa</Label>
+                <Textarea
+                  id="companyInfo"
+                  rows={4}
+                  value={businessProfile.companyInfo ?? ""}
+                  onChange={(e) => updateBusinessProfile({ companyInfo: e.target.value })}
+                  placeholder="Ex.: área atendida, diferenciais, contatos, links importantes..."
+                />
+              </div>
+
+              <div className="space-y-3 border-t border-[var(--border)] pt-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{templateDetail.catalogTitle}</p>
+                    <p className="text-sm text-muted">{templateDetail.catalogDescription}</p>
+                  </div>
+                  <Button type="button" variant="secondary" size="sm" onClick={addCatalogItem}>
+                    Adicionar item
+                  </Button>
+                </div>
+
+                {catalogItems.length > 0 ? (
+                  <div className="space-y-3">
+                    {catalogItems.map((item, index) => (
+                      <div key={index} className="rounded-lg border border-[var(--border)] p-3">
+                        <div className="grid gap-3 sm:grid-cols-[1fr_140px_auto]">
+                          <div>
+                            <Label htmlFor={`catalog-name-${index}`}>Nome</Label>
+                            <Input
+                              id={`catalog-name-${index}`}
+                              value={item.name ?? ""}
+                              onChange={(e) => updateCatalogItem(index, { name: e.target.value })}
+                              placeholder={templateDetail.namePlaceholder}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`catalog-price-${index}`}>Preço</Label>
+                            <Input
+                              id={`catalog-price-${index}`}
+                              value={item.price ?? ""}
+                              onChange={(e) => updateCatalogItem(index, { price: e.target.value })}
+                              placeholder="Ex.: R$ 99"
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeCatalogItem(index)}
+                              className="mb-0.5"
+                            >
+                              Remover
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="mt-3">
+                          <Label htmlFor={`catalog-details-${index}`}>Detalhes</Label>
+                          <Textarea
+                            id={`catalog-details-${index}`}
+                            rows={2}
+                            value={item.details ?? ""}
+                            onChange={(e) => updateCatalogItem(index, { details: e.target.value })}
+                            placeholder="Descrição, condições, variações, links ou observações."
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-lg border border-dashed border-[var(--border)] px-3 py-2 text-sm text-muted">
+                    Nenhum item cadastrado. O agente será instruído a não inventar produtos ou preços.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-4">
+                {templateDetail.notes.map((note) => (
+                  <div key={note.key}>
+                    <Label htmlFor={`template-note-${note.key}`}>{note.label}</Label>
+                    <Textarea
+                      id={`template-note-${note.key}`}
+                      rows={3}
+                      value={businessProfile.templateNotes?.[note.key] ?? ""}
+                      onChange={(e) => updateTemplateNote(note.key, e.target.value)}
+                      placeholder={note.placeholder}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-4">
+              <CardTitle>3. Voz do agente</CardTitle>
+              <CardDescription>Como o agente deve responder e agir (personalidade, regras).</CardDescription>
               <Textarea
-                id="companyInfo"
-                rows={4}
-                value={businessProfile.companyInfo ?? ""}
-                onChange={(e) => updateBusinessProfile({ companyInfo: e.target.value })}
-                placeholder="Ex.: horários, área atendida, diferenciais, contatos, links importantes..."
+                rows={12}
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder="Descreva o comportamento do agente..."
               />
             </div>
+          )}
 
-            <div className="space-y-3 border-t border-[var(--border)] pt-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{templateDetail.catalogTitle}</p>
-                  <p className="text-sm text-muted">{templateDetail.catalogDescription}</p>
-                </div>
-                <Button type="button" variant="secondary" size="sm" onClick={addCatalogItem}>
-                  Adicionar item
+          {step === 4 && (
+            <div className="space-y-4">
+              <CardTitle>4. Skills</CardTitle>
+              <CardDescription>O que o agente sabe fazer. Adicione quantas quiser.</CardDescription>
+              <div className="flex gap-2">
+                <Input
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addSkill();
+                    }
+                  }}
+                  placeholder="Ex.: Consultar status de pedido"
+                />
+                <Button variant="secondary" onClick={() => addSkill()} type="button">
+                  Adicionar
                 </Button>
               </div>
-
-              {catalogItems.length > 0 && (
-                <div className="space-y-3">
-                  {catalogItems.map((item, index) => (
-                    <div key={index} className="rounded-lg border border-[var(--border)] p-3">
-                      <div className="grid gap-3 sm:grid-cols-[1fr_140px_auto]">
-                        <div>
-                          <Label htmlFor={`catalog-name-${index}`}>Nome</Label>
-                          <Input
-                            id={`catalog-name-${index}`}
-                            value={item.name ?? ""}
-                            onChange={(e) => updateCatalogItem(index, { name: e.target.value })}
-                            placeholder={templateDetail.namePlaceholder}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor={`catalog-price-${index}`}>Preço</Label>
-                          <Input
-                            id={`catalog-price-${index}`}
-                            value={item.price ?? ""}
-                            onChange={(e) => updateCatalogItem(index, { price: e.target.value })}
-                            placeholder="Ex.: R$ 99"
-                          />
-                        </div>
-                        <div className="flex items-end">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeCatalogItem(index)}
-                            className="mb-0.5"
-                          >
-                            Remover
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <Label htmlFor={`catalog-details-${index}`}>Detalhes</Label>
-                        <Textarea
-                          id={`catalog-details-${index}`}
-                          rows={2}
-                          value={item.details ?? ""}
-                          onChange={(e) => updateCatalogItem(index, { details: e.target.value })}
-                          placeholder="Descrição, condições, variações, links ou observações."
-                        />
-                      </div>
-                    </div>
+              {skills.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {skills.map((s) => (
+                    <span
+                      key={s}
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-white/5 px-3 py-1 text-sm"
+                    >
+                      {s}
+                      <button
+                        type="button"
+                        onClick={() => removeSkill(s)}
+                        className="text-muted hover:text-foreground"
+                        aria-label={`Remover ${s}`}
+                      >
+                        x
+                      </button>
+                    </span>
                   ))}
                 </div>
               )}
+              <div>
+                <p className="mb-1 text-xs text-muted">Sugestões:</p>
+                <div className="flex flex-wrap gap-2">
+                  {SKILL_SUGGESTIONS.filter((s) => !skills.includes(s)).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => addSkill(s)}
+                      className="rounded-full border border-dashed border-[var(--border)] px-3 py-1 text-xs text-muted hover:bg-white/5"
+                    >
+                      + {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
-              {catalogItems.length === 0 && (
-                <p className="rounded-lg border border-dashed border-[var(--border)] px-3 py-2 text-sm text-muted">
-                  Nenhum item cadastrado. O agente será instruído a não inventar produtos ou preços.
-                </p>
+          {step === 5 && (
+            <div className="space-y-4">
+              <CardTitle>5. Conexão WhatsApp</CardTitle>
+              {agentId ? (
+                <WhatsappPanel
+                  agentId={agentId}
+                  initial={connection ?? { status: "disconnected", qr_code: null, phone_number: null, last_error: null }}
+                />
+              ) : (
+                <CardDescription>Crie o agente para gerar o QR code automaticamente.</CardDescription>
               )}
             </div>
-
-            <div className="grid gap-4">
-              {templateDetail.notes.map((note) => (
-                <div key={note.key}>
-                  <Label htmlFor={`template-note-${note.key}`}>{note.label}</Label>
-                  <Textarea
-                    id={`template-note-${note.key}`}
-                    rows={3}
-                    value={businessProfile.templateNotes?.[note.key] ?? ""}
-                    onChange={(e) => updateTemplateNote(note.key, e.target.value)}
-                    placeholder={note.placeholder}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-4">
-            <CardTitle>3. Voz do agente</CardTitle>
-            <CardDescription>Como o agente deve responder e agir (personalidade, regras).</CardDescription>
-            <Textarea rows={12} value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} placeholder="Descreva o comportamento do agente…" />
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="space-y-4">
-            <CardTitle>4. Skills</CardTitle>
-            <CardDescription>O que o agente sabe fazer. Adicione quantas quiser.</CardDescription>
-            <div className="flex gap-2">
-              <Input
-                value={skillInput}
-                onChange={(e) => setSkillInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addSkill();
-                  }
-                }}
-                placeholder="Ex.: Consultar status de pedido"
-              />
-              <Button variant="secondary" onClick={() => addSkill()} type="button">
-                Adicionar
-              </Button>
-            </div>
-            {skills.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {skills.map((s) => (
-                  <span key={s} className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-white/5 px-3 py-1 text-sm">
-                    {s}
-                    <button type="button" onClick={() => removeSkill(s)} className="text-muted hover:text-foreground" aria-label={`Remover ${s}`}>
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-            <div>
-              <p className="mb-1 text-xs text-muted">Sugestões:</p>
-              <div className="flex flex-wrap gap-2">
-                {SKILL_SUGGESTIONS.filter((s) => !skills.includes(s)).map((s) => (
-                  <button key={s} type="button" onClick={() => addSkill(s)} className="rounded-full border border-dashed border-[var(--border)] px-3 py-1 text-xs text-muted hover:bg-white/5">
-                    + {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {step === 5 && (
-          <div className="space-y-4">
-            <CardTitle>5. Conexão WhatsApp</CardTitle>
-            {agentId ? (
-              <WhatsappPanel
-                agentId={agentId}
-                initial={
-                  connection ?? { status: "disconnected", qr_code: null, phone_number: null, last_error: null }
-                }
-              />
-            ) : (
-              <CardDescription>Crie o agente (botão abaixo) para gerar o QR code automaticamente.</CardDescription>
-            )}
-          </div>
-        )}
-
-        {step === 6 && (
-          <div className="space-y-4">
-            <CardTitle>6. Teste</CardTitle>
-            {agentId ? (
-              <TestChat agentId={agentId} agentName={agentName || "agente"} initialMessages={initialTestMessages} />
-            ) : (
-              <CardDescription>Crie o agente (botão abaixo) para testar a conversa.</CardDescription>
-            )}
-          </div>
-        )}
-
-        {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
-      </Card>
-
-      {/* Rodapé */}
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1}>
-          Voltar
-        </Button>
-        <div className="flex items-center gap-3">
-          {saved && <span className="text-sm text-emerald-400">Salvo!</span>}
-          {hasAgent ? (
-            <Button onClick={save} disabled={loading}>
-              {loading ? "Salvando…" : "Salvar alterações"}
-            </Button>
-          ) : (
-            <Button onClick={create} disabled={!canCreate || loading}>
-              {loading ? "Criando…" : "Criar agente"}
-            </Button>
           )}
-          <Button
-            variant="secondary"
-            onClick={() => setStep((s) => Math.min(STEPS.length, s + 1))}
-            disabled={step === STEPS.length}
-          >
-            Próximo
+
+          {step === 6 && (
+            <div className="space-y-4">
+              <CardTitle>6. Teste</CardTitle>
+              {agentId ? (
+                <TestChat agentId={agentId} agentName={agentName || "agente"} initialMessages={initialTestMessages} />
+              ) : (
+                <CardDescription>Crie o agente para testar a conversa.</CardDescription>
+              )}
+            </div>
+          )}
+
+          {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+        </Card>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button variant="ghost" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1}>
+            Voltar
           </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            {saved && <span className="text-sm text-emerald-400">Salvo!</span>}
+            {hasAgent ? (
+              <Button onClick={save} disabled={loading}>
+                {loading ? "Salvando..." : "Salvar alterações"}
+              </Button>
+            ) : (
+              <Button onClick={create} disabled={!canCreate || loading}>
+                {loading ? "Criando..." : "Criar agente"}
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              onClick={() => setStep((s) => Math.min(STEPS.length, s + 1))}
+              disabled={step === STEPS.length}
+            >
+              Próximo
+            </Button>
+          </div>
         </div>
       </div>
+
+      <aside className="space-y-4 lg:sticky lg:top-6">
+        <Card className="space-y-4">
+          <div>
+            <CardTitle>Resumo</CardTitle>
+            <CardDescription className="mt-1">Visão rápida da configuração antes de salvar.</CardDescription>
+          </div>
+          <div className="space-y-2">
+            {summaryItems.map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between gap-3 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+              >
+                <span className="text-muted">{item.label}</span>
+                <span className="max-w-[150px] truncate text-right font-medium text-foreground">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="space-y-3 bg-[var(--card-2)]">
+          <CardTitle>Campos por template</CardTitle>
+          <CardDescription>
+            Ao trocar o template, esta etapa mostra regras e campos úteis para aquele tipo de atendimento.
+          </CardDescription>
+          <div className="space-y-2 text-sm text-muted">
+            {templateDetail.notes.map((note) => (
+              <div key={note.key} className="rounded-md border border-[var(--border)] bg-black/10 px-3 py-2">
+                {note.label}
+              </div>
+            ))}
+          </div>
+        </Card>
+      </aside>
     </div>
   );
 }
