@@ -9,7 +9,7 @@ export default async function AdminAgentPage({ params }: { params: Promise<{ id:
 
   const { data: agent } = await supabase
     .from("agents")
-    .select("id, display_name, system_prompt, model, owner_id, tone, skills")
+    .select("id, display_name, system_prompt, model, owner_id, template_id, tone, skills, business_profile")
     .eq("id", id)
     .maybeSingle();
 

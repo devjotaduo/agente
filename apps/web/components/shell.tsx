@@ -1,53 +1,58 @@
 import Link from "next/link";
+import { Logo } from "@/components/logo";
+import { NavLinks, type NavItem } from "@/components/nav-links";
+import { signOut } from "@/app/actions/auth";
 
-export interface NavItem {
-  href: string;
-  label: string;
-}
+export type { NavItem };
 
 export function Shell({
-  brand,
+  badge,
   email,
   nav,
+  home,
   children,
 }: {
-  brand: string;
+  /** Rotulo do contexto (ex.: "Admin" ou "Cliente"). */
+  badge?: string;
   email: string;
   nav: NavItem[];
+  /** Para onde o logo aponta. */
+  home: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-[var(--border)]">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-6">
-            <span className="font-semibold">{brand}</span>
-            <nav className="flex items-center gap-1">
-              {nav.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-md px-3 py-1.5 text-sm text-muted hover:bg-white/5 hover:text-foreground"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-muted sm:inline">{email}</span>
-            <form action="/auth/signout" method="post">
+    <div className="min-h-screen lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
+      <aside className="border-b border-[var(--border)] bg-[var(--background)]/85 backdrop-blur lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-4 lg:h-full lg:max-w-none lg:px-5 lg:py-5">
+          <Link href={home} className="flex w-fit items-center gap-2">
+            <Logo />
+            {badge && (
+              <span className="rounded-md border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-muted">
+                {badge}
+              </span>
+            )}
+          </Link>
+
+          <NavLinks items={nav} orientation="vertical" />
+
+          <div className="mt-auto border-t border-[var(--border)] pt-4">
+            <p className="truncate text-sm text-muted" title={email}>
+              {email}
+            </p>
+            <form action={signOut} className="mt-3">
               <button
                 type="submit"
-                className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm text-muted hover:bg-white/5 hover:text-foreground"
+                className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-left text-sm text-muted transition-colors hover:bg-white/5 hover:text-foreground"
               >
                 Sair
               </button>
             </form>
           </div>
         </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      </aside>
+      <main className="min-w-0 px-4 py-6 lg:px-8 lg:py-8">
+        <div className="mx-auto w-full max-w-6xl">{children}</div>
+      </main>
     </div>
   );
 }

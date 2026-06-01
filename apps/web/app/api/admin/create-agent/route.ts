@@ -2,12 +2,67 @@ import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { AgentBusinessProfile, AgentCatalogItem } from "@jotaduo/shared";
 
 export const runtime = "nodejs";
+
+const TEMPLATE_NOTE_KEYS = [
+  "attendance",
+  "sales",
+  "postSales",
+  "scheduling",
+  "availability",
+  "policies",
+] as const;
 
 function genPassword() {
   // Senha legível e forte o suficiente para entrega inicial ao cliente.
   return randomBytes(9).toString("base64url");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function cleanText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeCatalogItem(value: unknown): AgentCatalogItem | null {
+  if (!isRecord(value)) return null;
+  const item = {
+    name: cleanText(value.name),
+    price: cleanText(value.price),
+    details: cleanText(value.details),
+  };
+  return item.name || item.price || item.details ? item : null;
+}
+
+function normalizeBusinessProfile(value: unknown): AgentBusinessProfile {
+  const source = isRecord(value) ? value : {};
+  const products = Array.isArray(source.products)
+    ? source.products.map(normalizeCatalogItem).filter((item): item is AgentCatalogItem => !!item)
+    : [];
+  const rawNotes = isRecord(source.templateNotes) ? source.templateNotes : {};
+  const templateNotes: NonNullable<AgentBusinessProfile["templateNotes"]> = {};
+
+  for (const key of TEMPLATE_NOTE_KEYS) {
+    const note = cleanText(rawNotes[key]);
+    if (note) templateNotes[key] = note;
+  }
+
+  const profile: AgentBusinessProfile = {};
+  const companyName = cleanText(source.companyName);
+  const companyAddress = cleanText(source.companyAddress);
+  const companyInfo = cleanText(source.companyInfo);
+
+  if (companyName) profile.companyName = companyName;
+  if (companyAddress) profile.companyAddress = companyAddress;
+  if (companyInfo) profile.companyInfo = companyInfo;
+  if (products.length) profile.products = products;
+  if (Object.keys(templateNotes).length) profile.templateNotes = templateNotes;
+
+  return profile;
 }
 
 export async function POST(request: Request) {
@@ -29,6 +84,11 @@ export async function POST(request: Request) {
   const agentName = (body?.agentName ?? "").trim();
   const templateId: string | null = body?.templateId || null;
   const systemPromptOverride: string | undefined = body?.systemPrompt;
+  const tone: string = (body?.tone ?? "").trim();
+  const skills: string[] = Array.isArray(body?.skills)
+    ? body.skills.map((s: unknown) => String(s).trim()).filter(Boolean)
+    : [];
+  const businessProfile = normalizeBusinessProfile(body?.businessProfile);
   let password: string = (body?.password ?? "").trim();
 
   if (!email || !agentName) {
@@ -71,6 +131,9 @@ export async function POST(request: Request) {
       template_id: templateId,
       display_name: agentName,
       system_prompt: systemPrompt,
+      tone,
+      skills,
+      business_profile: businessProfile,
     })
     .select("id")
     .single();

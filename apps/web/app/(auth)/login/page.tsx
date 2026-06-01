@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardDescription, CardTitle, Label } from "@/components/ui/card";
+import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -29,11 +30,13 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <div className="mb-6 text-center">
-          <CardTitle className="text-xl">jotaduo · Agentes</CardTitle>
-          <CardDescription className="mt-1">Acesse seu painel</CardDescription>
+      <div className="w-full max-w-sm">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <Logo size={40} showText={false} />
+          <CardTitle className="mt-4 text-xl">Bem-vindo de volta</CardTitle>
+          <CardDescription className="mt-1">Entre para acessar o seu agente</CardDescription>
         </div>
+        <Card className="w-full">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="email">E-mail</Label>
@@ -64,7 +67,11 @@ export default function LoginPage() {
             {loading ? "Entrando…" : "Entrar"}
           </Button>
         </form>
-      </Card>
+        </Card>
+        <p className="mt-4 text-center text-xs text-muted">
+          Acesso exclusivo para clientes jotaduo.
+        </p>
+      </div>
     </main>
   );
 }
