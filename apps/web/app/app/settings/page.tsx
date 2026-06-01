@@ -1,6 +1,6 @@
 import { getMyAgent } from "@/lib/agents";
 import { createClient } from "@/lib/supabase/server";
-import { AgentVoiceForm } from "@/components/agent-voice-form";
+import { AgentSteps } from "@/components/agent-steps";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 
 export default async function SettingsPage() {
@@ -17,19 +17,19 @@ export default async function SettingsPage() {
   const supabase = await createClient();
   const { data: templates } = await supabase
     .from("templates")
-    .select("id, name, default_agent_name, default_system_prompt")
+    .select("id, slug, name, description, default_agent_name, default_system_prompt")
     .eq("is_active", true)
     .order("name");
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Voz do agente</h1>
+        <h1 className="text-2xl font-semibold">Configuração do agente</h1>
         <p className="text-sm text-muted">
-          Defina o nome e como o agente deve responder e agir.
+          Ajuste dados da empresa, catálogo, voz, skills e testes em um único fluxo.
         </p>
       </div>
-      <AgentVoiceForm agent={agent} templates={templates ?? []} />
+      <AgentSteps agent={agent} templates={templates ?? []} />
     </div>
   );
 }

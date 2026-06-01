@@ -76,6 +76,16 @@ const DEFAULT_TEMPLATE_NOTES: { key: TemplateNoteKey; label: string; placeholder
     label: "Regras de atendimento",
     placeholder: "Ex.: pedir número do pedido, prazo para retorno humano, canais de suporte...",
   },
+  {
+    key: "faq",
+    label: "Perguntas frequentes",
+    placeholder: "Ex.: dúvidas comuns, respostas aprovadas, links úteis...",
+  },
+  {
+    key: "escalation",
+    label: "Quando chamar um humano",
+    placeholder: "Ex.: reclamações graves, pedido de desconto fora da regra, assuntos financeiros...",
+  },
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -105,6 +115,9 @@ function normalizeBusinessProfile(value: unknown): AgentBusinessProfile {
   return {
     companyName: cleanString(value.companyName),
     companyAddress: cleanString(value.companyAddress),
+    companyPhone: cleanString(value.companyPhone),
+    companyWebsite: cleanString(value.companyWebsite),
+    openingHours: cleanString(value.openingHours),
     companyInfo: cleanString(value.companyInfo),
     products: Array.isArray(value.products)
       ? value.products.map(normalizeCatalogItem).filter((item): item is AgentCatalogItem => !!item)
@@ -116,6 +129,11 @@ function normalizeBusinessProfile(value: unknown): AgentBusinessProfile {
       scheduling: cleanString(rawNotes.scheduling),
       availability: cleanString(rawNotes.availability),
       policies: cleanString(rawNotes.policies),
+      faq: cleanString(rawNotes.faq),
+      escalation: cleanString(rawNotes.escalation),
+      delivery: cleanString(rawNotes.delivery),
+      payment: cleanString(rawNotes.payment),
+      bookingRequiredData: cleanString(rawNotes.bookingRequiredData),
     },
   };
 }
@@ -134,6 +152,16 @@ function getTemplateDetailConfig(template?: Template) {
             placeholder: "Ex.: formas de pagamento, descontos, link de compra, região atendida...",
           },
           {
+            key: "payment" as const,
+            label: "Pagamento",
+            placeholder: "Ex.: Pix, cartão, boleto, parcelamento, cobrança recorrente...",
+          },
+          {
+            key: "delivery" as const,
+            label: "Entrega ou retirada",
+            placeholder: "Ex.: frete, prazo, retirada na loja, envio digital...",
+          },
+          {
             key: "policies" as const,
             label: "Regras e limites",
             placeholder: "Ex.: quando pedir ajuda humana, política de orçamento, estoque...",
@@ -150,6 +178,11 @@ function getTemplateDetailConfig(template?: Template) {
             key: "postSales" as const,
             label: "Trocas, garantia e devoluções",
             placeholder: "Ex.: prazo de troca, documentos necessários, etapas da garantia...",
+          },
+          {
+            key: "delivery" as const,
+            label: "Entrega e acompanhamento",
+            placeholder: "Ex.: prazos, rastreio, transportadora, retirada, atrasos...",
           },
           {
             key: "policies" as const,
@@ -173,6 +206,11 @@ function getTemplateDetailConfig(template?: Template) {
             key: "scheduling" as const,
             label: "Regras de agendamento",
             placeholder: "Ex.: antecedência mínima, dados necessários, remarcação, confirmação...",
+          },
+          {
+            key: "bookingRequiredData" as const,
+            label: "Dados necessários",
+            placeholder: "Ex.: nome completo, telefone, serviço desejado, unidade, preferência de horário...",
           },
         ],
       };
@@ -228,6 +266,28 @@ export function AgentSteps({
   const selectedTemplate = templates.find((x) => x.id === templateId) ?? (agent ? undefined : templates[0]);
   const templateDetail = getTemplateDetailConfig(selectedTemplate);
   const catalogItems = businessProfile.products ?? [];
+  const filledCompanyFields = [
+    businessProfile.companyName,
+    businessProfile.companyAddress,
+    businessProfile.companyPhone,
+    businessProfile.companyWebsite,
+    businessProfile.openingHours,
+    businessProfile.companyInfo,
+  ].filter((value) => value?.trim()).length;
+  const filledCatalogItems = catalogItems.filter((item) =>
+    [item.name, item.price, item.details].some((value) => value?.trim()),
+  ).length;
+  const filledTemplateNotes = Object.values(businessProfile.templateNotes ?? {}).filter((value) =>
+    value?.trim(),
+  ).length;
+  const summaryItems = [
+    { label: "Básico", value: agentName.trim() ? "Completo" : "Pendente" },
+    { label: "Template", value: selectedTemplate?.name ?? "Livre" },
+    { label: "Empresa", value: `${filledCompanyFields} campos` },
+    { label: "Catálogo", value: `${filledCatalogItems} itens` },
+    { label: "Regras", value: `${filledTemplateNotes} notas` },
+    { label: "Skills", value: `${skills.length} skills` },
+  ];
 
   function applyTemplate(id: string) {
     setTemplateId(id);
@@ -327,37 +387,40 @@ export function AgentSteps({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+      <div className="space-y-5">
       {/* Stepper */}
-      <div className="flex flex-wrap items-center gap-1">
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-2">
+        <div className="grid gap-1 sm:grid-cols-3 lg:grid-cols-6">
         {STEPS.map((s, i) => (
           <div key={s.n} className="flex items-center">
             <button
               type="button"
               onClick={() => setStep(s.n)}
               className={cn(
-                "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors",
-                step === s.n ? "bg-white/8 text-foreground" : "text-muted hover:bg-white/5",
+                "flex min-h-10 w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors",
+                step === s.n ? "bg-[var(--primary)]/15 text-foreground" : "text-muted hover:bg-white/5",
               )}
             >
               <span
                 className={cn(
-                  "grid h-6 w-6 place-items-center rounded-full text-xs font-semibold",
+                  "grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold",
                   step === s.n ? "bg-[var(--primary)] text-white" : "bg-white/5 text-muted",
                 )}
               >
                 {s.n}
               </span>
-              {s.label}
+              <span className="truncate">{s.label}</span>
             </button>
-            {i < STEPS.length - 1 && <span className="mx-1 h-px w-4 bg-[var(--border)]" />}
+            {i < STEPS.length - 1 && <span className="hidden" />}
           </div>
         ))}
+        </div>
       </div>
 
       {createdLogin && (
         <Card className="border-[var(--success)]/30 bg-[var(--success)]/5">
-          <CardTitle className="text-[var(--success)]">Agente criado ✅</CardTitle>
+          <CardTitle className="text-[var(--success)]">Agente criado</CardTitle>
           <CardDescription className="mt-1">
             Credenciais do cliente (repasse a ele) — a senha não será exibida de novo.
           </CardDescription>
@@ -375,7 +438,7 @@ export function AgentSteps({
       )}
 
       {/* Conteúdo do passo */}
-      <Card className="min-h-[280px]">
+      <Card className="min-h-[420px]">
         {step === 1 && (
           <div className="space-y-4">
             <CardTitle>1. Básico</CardTitle>
@@ -461,6 +524,36 @@ export function AgentSteps({
                   value={businessProfile.companyAddress ?? ""}
                   onChange={(e) => updateBusinessProfile({ companyAddress: e.target.value })}
                   placeholder="Rua, número, bairro, cidade"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <Label htmlFor="companyPhone">Telefone/WhatsApp</Label>
+                <Input
+                  id="companyPhone"
+                  value={businessProfile.companyPhone ?? ""}
+                  onChange={(e) => updateBusinessProfile({ companyPhone: e.target.value })}
+                  placeholder="Ex.: (11) 99999-9999"
+                />
+              </div>
+              <div>
+                <Label htmlFor="companyWebsite">Site ou link</Label>
+                <Input
+                  id="companyWebsite"
+                  value={businessProfile.companyWebsite ?? ""}
+                  onChange={(e) => updateBusinessProfile({ companyWebsite: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="openingHours">Horário</Label>
+                <Input
+                  id="openingHours"
+                  value={businessProfile.openingHours ?? ""}
+                  onChange={(e) => updateBusinessProfile({ openingHours: e.target.value })}
+                  placeholder="Seg a sex, 9h às 18h"
                 />
               </div>
             </div>
@@ -669,6 +762,41 @@ export function AgentSteps({
           </Button>
         </div>
       </div>
+      </div>
+
+      <aside className="space-y-4 lg:sticky lg:top-6">
+        <Card className="space-y-4">
+          <div>
+            <CardTitle>Resumo</CardTitle>
+            <CardDescription className="mt-1">Visão rápida da configuração antes de salvar.</CardDescription>
+          </div>
+          <div className="space-y-2">
+            {summaryItems.map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between gap-3 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+              >
+                <span className="text-muted">{item.label}</span>
+                <span className="max-w-[150px] truncate text-right font-medium text-foreground">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="space-y-3 bg-[var(--card-2)]">
+          <CardTitle>Campos por template</CardTitle>
+          <CardDescription>
+            Ao trocar o template, esta etapa mostra regras e campos mais úteis para aquele tipo de atendimento.
+          </CardDescription>
+          <div className="space-y-2 text-sm text-muted">
+            {templateDetail.notes.map((note) => (
+              <div key={note.key} className="rounded-md border border-[var(--border)] bg-black/10 px-3 py-2">
+                {note.label}
+              </div>
+            ))}
+          </div>
+        </Card>
+      </aside>
     </div>
   );
 }

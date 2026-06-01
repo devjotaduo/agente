@@ -14,6 +14,9 @@ export function buildSystemPrompt(
   const business = agent.businessProfile;
   const companyName = business?.companyName?.trim();
   const companyAddress = business?.companyAddress?.trim();
+  const companyPhone = business?.companyPhone?.trim();
+  const companyWebsite = business?.companyWebsite?.trim();
+  const openingHours = business?.openingHours?.trim();
   const companyInfo = business?.companyInfo?.trim();
   const products = (business?.products ?? []).filter((item) =>
     [item.name, item.price, item.details].some((value) => value?.trim()),
@@ -28,10 +31,22 @@ export function buildSystemPrompt(
 
   if (tom) parts.push("", `Seu tom de voz deve ser: ${tom}.`);
 
-  if (companyName || companyAddress || companyInfo || products.length || Object.values(templateNotes).some(Boolean)) {
+  if (
+    companyName ||
+    companyAddress ||
+    companyPhone ||
+    companyWebsite ||
+    openingHours ||
+    companyInfo ||
+    products.length ||
+    Object.values(templateNotes).some(Boolean)
+  ) {
     parts.push("", "## Informações da empresa:");
     if (companyName) parts.push(`- Nome da empresa: ${companyName}`);
     if (companyAddress) parts.push(`- Endereço: ${companyAddress}`);
+    if (companyPhone) parts.push(`- Telefone/WhatsApp comercial: ${companyPhone}`);
+    if (companyWebsite) parts.push(`- Site ou link principal: ${companyWebsite}`);
+    if (openingHours) parts.push(`- Horário de funcionamento: ${openingHours}`);
     if (companyInfo) parts.push(`- Informações gerais: ${companyInfo}`);
 
     if (products.length) {
@@ -55,6 +70,11 @@ export function buildSystemPrompt(
       scheduling: "Regras de agendamento",
       availability: "Disponibilidade",
       policies: "Políticas e limites",
+      faq: "Perguntas frequentes",
+      escalation: "Quando encaminhar para humano",
+      delivery: "Entrega e retirada",
+      payment: "Pagamento",
+      bookingRequiredData: "Dados necessários para agendar",
     } as const;
 
     for (const [key, label] of Object.entries(noteLabels)) {

@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0e16;
-  --background-2: #0d1320;
-  --foreground: #e8ebf2;
-  --card: #121826;
-  --card-2: #161d2e;
-  --border: #1f2940;
-  --border-strong: #2a3754;
-  --primary: #5b7cfa;
-  --primary-hover: #6d8bff;
-  --muted: #8b94a8;
+  --background: #0c0d10;
+  --background-2: #111318;
+  --foreground: #eef0f3;
+  --card: #15171d;
+  --card-2: #1b1f27;
+  --border: #2a2f3a;
+  --border-strong: #3a4150;
+  --primary: #4f8cff;
+  --primary-hover: #6aa0ff;
+  --muted: #9aa2b2;
   --success: #34d399;
   --whatsapp: #25d366;
 }
@@ -29,11 +29,7 @@
 
 html,
 body {
-  background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(91, 124, 250, 0.08), transparent 60%),
-    radial-gradient(900px 500px at 0% 0%, rgba(52, 211, 153, 0.05), transparent 55%),
-    var(--background);
-  background-attachment: fixed;
+  background: var(--background);
   color: var(--foreground);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;

@@ -13,6 +13,11 @@ const TEMPLATE_NOTE_KEYS = [
   "scheduling",
   "availability",
   "policies",
+  "faq",
+  "escalation",
+  "delivery",
+  "payment",
+  "bookingRequiredData",
 ] as const;
 
 function genPassword() {
@@ -54,10 +59,16 @@ function normalizeBusinessProfile(value: unknown): AgentBusinessProfile {
   const profile: AgentBusinessProfile = {};
   const companyName = cleanText(source.companyName);
   const companyAddress = cleanText(source.companyAddress);
+  const companyPhone = cleanText(source.companyPhone);
+  const companyWebsite = cleanText(source.companyWebsite);
+  const openingHours = cleanText(source.openingHours);
   const companyInfo = cleanText(source.companyInfo);
 
   if (companyName) profile.companyName = companyName;
   if (companyAddress) profile.companyAddress = companyAddress;
+  if (companyPhone) profile.companyPhone = companyPhone;
+  if (companyWebsite) profile.companyWebsite = companyWebsite;
+  if (openingHours) profile.openingHours = openingHours;
   if (companyInfo) profile.companyInfo = companyInfo;
   if (products.length) profile.products = products;
   if (Object.keys(templateNotes).length) profile.templateNotes = templateNotes;

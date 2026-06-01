@@ -45,6 +45,9 @@ export interface AgentCatalogItem {
 export interface AgentBusinessProfile {
   companyName?: string;
   companyAddress?: string;
+  companyPhone?: string;
+  companyWebsite?: string;
+  openingHours?: string;
   companyInfo?: string;
   products?: AgentCatalogItem[];
   templateNotes?: {
@@ -54,6 +57,11 @@ export interface AgentBusinessProfile {
     scheduling?: string;
     availability?: string;
     policies?: string;
+    faq?: string;
+    escalation?: string;
+    delivery?: string;
+    payment?: string;
+    bookingRequiredData?: string;
   };
 }
 
