@@ -43,12 +43,7 @@ export function PosterStudio({
   const [showConnForm, setShowConnForm] = useState(conn.status !== "connected");
   const [showManual, setShowManual] = useState(false);
 
-  // Login direto do Instagram (sem precisar de Página do Facebook).
   function oauthConnect() {
-    window.location.href = `/api/admin/instagram/oauth/ig/start?agentId=${encodeURIComponent(agentId)}`;
-  }
-  // Alternativa: conectar via Página do Facebook.
-  function fbPageConnect() {
     window.location.href = `/api/admin/instagram/oauth/start?agentId=${encodeURIComponent(agentId)}`;
   }
 
@@ -174,8 +169,8 @@ export function PosterStudio({
             )}
             <CardDescription>
               Conecte uma conta do Instagram <span className="text-foreground">profissional</span>{" "}
-              (Empresa/Criador). Você faz login no Instagram e autoriza — sem colar token e{" "}
-              <span className="text-foreground">sem precisar de Página do Facebook</span>.
+              (Empresa/Criador) que esteja vinculada a uma Página do Facebook. Você faz login na
+              Meta e autoriza — sem colar token.
             </CardDescription>
             <div className="flex flex-wrap items-center gap-3">
               <Button onClick={oauthConnect}>Conectar Instagram</Button>
@@ -184,19 +179,10 @@ export function PosterStudio({
                   Cancelar
                 </Button>
               )}
-            </div>
-            <div className="flex flex-wrap items-center gap-4 text-xs">
-              <button
-                type="button"
-                onClick={fbPageConnect}
-                className="text-muted underline hover:text-foreground"
-              >
-                conectar via Página do Facebook
-              </button>
               <button
                 type="button"
                 onClick={() => setShowManual((v) => !v)}
-                className="text-muted underline hover:text-foreground"
+                className="text-xs text-muted underline hover:text-foreground"
               >
                 {showManual ? "ocultar token manual" : "ou colar token manualmente"}
               </button>

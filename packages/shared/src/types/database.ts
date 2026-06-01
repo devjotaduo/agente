@@ -222,7 +222,6 @@ export type Database = {
       instagram_connections: {
         Row: {
           agent_id: string;
-          auth_type: string;
           ig_user_id: string | null;
           last_error: string | null;
           status: Database["public"]["Enums"]["ig_status"];
@@ -232,7 +231,6 @@ export type Database = {
         };
         Insert: {
           agent_id: string;
-          auth_type?: string;
           ig_user_id?: string | null;
           last_error?: string | null;
           status?: Database["public"]["Enums"]["ig_status"];
@@ -242,7 +240,6 @@ export type Database = {
         };
         Update: {
           agent_id?: string;
-          auth_type?: string;
           ig_user_id?: string | null;
           last_error?: string | null;
           status?: Database["public"]["Enums"]["ig_status"];
