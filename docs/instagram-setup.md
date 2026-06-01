@@ -26,7 +26,34 @@ No Instagram: **Editar perfil → Página → conectar/criar uma Página**.
 
 ---
 
-## ⭐ Método recomendado: OAuth "Conectar Instagram" (sem colar token)
+## ⭐⭐ Método mais simples: login direto do Instagram (SEM Página do Facebook)
+Esse é o caminho recomendado: a conta do Instagram conecta direto, sem precisar
+vincular uma Página do Facebook. No painel é só clicar **Conectar Instagram** e
+logar no Instagram.
+
+### Configurar (uma vez)
+1. No app da Meta, adicione o produto **Instagram** → **API setup with Instagram login**.
+2. Copie o **Instagram App ID** e o **Instagram App Secret** (são DIFERENTES do App ID
+   do Facebook) e ponha no `.env`:
+   ```
+   INSTAGRAM_APP_ID=...
+   INSTAGRAM_APP_SECRET=...
+   ```
+3. Em **Business login settings**, no campo **OAuth redirect URIs**, adicione:
+   ```
+   {APP_URL}/api/admin/instagram/oauth/ig/callback
+   ```
+   > ⚠️ O Instagram exige **HTTPS** no redirect (não aceita `http://localhost`).
+   > Para testar localmente, use um túnel HTTPS (ex.: \`cloudflared\`/\`ngrok\`) e
+   > defina \`NEXT_PUBLIC_APP_URL\` com essa URL https. Em produção, use o domínio.
+4. Adicione sua conta como **tester** (Instagram → roles) enquanto o app estiver em dev.
+
+### Conectar
+Painel do agente → **Instagram & pôsteres → Conectar Instagram** → login no Instagram → autorizar. Pronto.
+
+---
+
+## Alternativa: OAuth via Página do Facebook (sem colar token)
 Com este método, no painel basta clicar **Conectar Instagram**, fazer login na Meta e
 autorizar — o sistema captura o token e o IG User ID **automaticamente**.
 

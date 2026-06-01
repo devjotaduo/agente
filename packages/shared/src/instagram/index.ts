@@ -12,3 +12,10 @@ export {
   type OAuthConfig,
   type IgAccount,
 } from "./oauth";
+export {
+  buildInstagramLoginAuthUrl,
+  connectInstagramLogin,
+  INSTAGRAM_LOGIN_SCOPES,
+  type InstagramLoginConfig,
+  type InstagramLoginAccount,
+} from "./instagramLogin";
