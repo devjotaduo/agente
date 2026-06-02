@@ -84,23 +84,21 @@ export async function connectAgent(agentId: string): Promise<void> {
     sockets.set(agentId, sock);
     connecting.delete(agentId);
 
-    // Watchdog: se o handshake travar (ex.: erro de descriptografia deixa o
-    // socket pendurado sem emitir QR nem abrir), derruba e limpa a sessão
-    // (provavelmente corrupta) para o reconcile retentar do zero.
+    // Watchdog: se o handshake travar sem emitir QR nem abrir, derruba o socket
+    // para o reconcile reconectar. NÃO apaga a sessão — uma sessão válida (recém
+    // pareada) deve ser preservada; sessões realmente inválidas são tratadas no
+    // close por DisconnectReason.badSession.
     const watchdog = setTimeout(() => {
       if (sockets.get(agentId) === sock) {
         sockets.delete(agentId);
-        reconnectAttempts.delete(agentId);
-        console.log(`[worker] agente ${agentId}: handshake travado (watchdog). Limpando sessão.`);
-        clearSupabaseAuthState(agentId).catch(() => {});
-        setConn(agentId, { status: "qr_pending", qr_code: null }).catch(() => {});
+        console.log(`[worker] agente ${agentId}: handshake travado (watchdog). Reiniciando socket.`);
         try {
           sock.end(undefined);
         } catch {
           // ignora
         }
       }
-    }, 30000);
+    }, 60000);
 
     sock.ev.on("creds.update", saveCreds);
 
