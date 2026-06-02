@@ -138,6 +138,8 @@ export function PosterStudio({
       if (draft?.id === posterId) {
         setDraft((d) => (d ? { ...d, status: "published", caption, ig_permalink: permalink } : d));
       }
+    } catch (e: any) {
+      setPubError(e?.message ?? "Falha ao publicar.");
     } finally {
       setPubLoading(null);
     }
@@ -363,6 +365,6 @@ function StatusBadge({ status }: { status: PosterItem["status"] }) {
     published: { label: "publicado", cls: "bg-[var(--success)]/15 text-[var(--success)]" },
     failed: { label: "falhou", cls: "bg-red-500/15 text-red-400" },
   };
-  const s = map[status];
+  const s = map[status] ?? { label: String(status), cls: "bg-white/5 text-muted" };
   return <span className={`rounded-full px-2 py-0.5 text-[11px] ${s.cls}`}>{s.label}</span>;
 }

@@ -106,7 +106,7 @@ export async function POST(request: Request) {
       .from("posters")
       .update({ status: "ready", image_path: path, image_url: publicUrl, error: null })
       .eq("id", posterId)
-      .select("id, briefing, caption, image_url, status, created_at")
+      .select("id, briefing, caption, image_url, status, ig_permalink, created_at")
       .single();
 
     return NextResponse.json({ ok: true, poster: ready });
