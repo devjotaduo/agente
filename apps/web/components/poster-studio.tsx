@@ -45,6 +45,7 @@ export function PosterStudio({
 
   // Geração
   const [briefing, setBriefing] = useState("");
+  const [format, setFormat] = useState("1080x1080");
   const [genLoading, setGenLoading] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
 
@@ -97,7 +98,7 @@ export function PosterStudio({
       const res = await fetch("/api/admin/posters/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId, briefing: briefing.trim() }),
+        body: JSON.stringify({ agentId, briefing: briefing.trim(), size: format }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -239,6 +240,18 @@ export function PosterStudio({
           onChange={(e) => setBriefing(e.target.value)}
           placeholder="Ex.: Promoção de pizza grande na sexta, 2 por R$59,90. Visual apetitoso, cores quentes."
         />
+        <div className="flex items-center gap-2">
+          <Label htmlFor="fmt" className="mb-0">Formato</Label>
+          <select
+            id="fmt"
+            value={format}
+            onChange={(e) => setFormat(e.target.value)}
+            className="h-9 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 text-sm"
+          >
+            <option value="1080x1080">Quadrado (1:1)</option>
+            <option value="1080x1350">Retrato (4:5)</option>
+          </select>
+        </div>
         {genError && <p className="text-sm text-red-400">{genError}</p>}
         <div className="flex items-center gap-3">
           <Button onClick={generate} disabled={genLoading || !briefing.trim()}>

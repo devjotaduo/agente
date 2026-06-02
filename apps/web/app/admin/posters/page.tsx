@@ -18,6 +18,14 @@ export default async function PostersPage({
     .order("display_name");
 
   const list = agents ?? [];
+
+  // Status de conexão do Instagram por agente (para o seletor).
+  const { data: igConns } = list.length
+    ? await supabase.from("instagram_connections").select("agent_id, status")
+    : { data: [] as { agent_id: string; status: string }[] };
+  const igConnected = new Set(
+    (igConns ?? []).filter((c) => c.status === "connected").map((c) => c.agent_id),
+  );
   // Seleciona o agente da URL ou o primeiro disponível.
   const agentId = agentParam && list.some((a) => a.id === agentParam) ? agentParam : list[0]?.id;
 
@@ -42,12 +50,19 @@ export default async function PostersPage({
                 key={a.id}
                 href={`/admin/posters?agent=${a.id}`}
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                  "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
                   a.id === agentId
                     ? "border-[var(--primary)] bg-[var(--primary)]/15 text-foreground"
                     : "border-[var(--border)] text-muted hover:bg-white/5",
                 )}
+                title={igConnected.has(a.id) ? "Instagram conectado" : "Instagram desconectado"}
               >
+                <span
+                  className={cn(
+                    "h-2 w-2 rounded-full",
+                    igConnected.has(a.id) ? "bg-[var(--success)]" : "bg-white/20",
+                  )}
+                />
                 {a.display_name}
               </Link>
             ))}

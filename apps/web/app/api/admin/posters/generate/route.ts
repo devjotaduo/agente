@@ -36,6 +36,9 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const agentId: string = (body?.agentId ?? "").trim();
   const briefing: string = (body?.briefing ?? "").trim();
+  // Formato do post (apenas valores aceitos; padrão quadrado 1:1).
+  const ALLOWED_SIZES = new Set(["1080x1080", "1080x1350"]);
+  const size: string = ALLOWED_SIZES.has(body?.size) ? body.size : "1080x1080";
   if (!agentId || !briefing) {
     return NextResponse.json({ error: "agentId e briefing são obrigatórios." }, { status: 400 });
   }
@@ -86,7 +89,7 @@ export async function POST(request: Request) {
       apiKey: LLM_API_KEY,
       baseURL: LLM_BASE_URL,
       model: IMAGE_MODEL,
-      size: "1080x1080",
+      size,
     });
 
     // 7) Sobe no bucket público 'posters' (URL estável p/ o Instagram buscar).
