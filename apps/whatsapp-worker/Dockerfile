@@ -20,10 +20,8 @@ COPY packages/shared/package.json packages/shared/
 COPY apps/web/package.json apps/web/
 COPY apps/whatsapp-worker/package.json apps/whatsapp-worker/
 
-# Aprova os builds nativos no ambiente Docker (pnpm padrão lê onlyBuiltDependencies).
-RUN printf '\nonlyBuiltDependencies:\n  - esbuild\n  - sharp\n  - protobufjs\n' >> pnpm-workspace.yaml
-
 # Instala apenas o worker + shared (ignora web e deps de imagem/instagram).
+# O pnpm-workspace.yaml já contém onlyBuiltDependencies e blockExoticSubdeps.
 RUN pnpm install --filter "@jotaduo/whatsapp-worker..." --frozen-lockfile
 
 # Código-fonte.
