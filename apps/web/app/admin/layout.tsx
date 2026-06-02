@@ -5,7 +5,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const profile = await requireAdmin();
   return (
     <Shell
-      brand="jotaduo · Admin"
+      badge="Admin"
+      home="/admin"
       email={profile.email}
       nav={[
         { href: "/admin", label: "Visão geral" },

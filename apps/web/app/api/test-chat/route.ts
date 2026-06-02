@@ -5,10 +5,13 @@ import { generateReply, type ChatMessage } from "@jotaduo/shared";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+const LLM_BASE_URL =
+  process.env.LLM_BASE_URL ?? "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
+
 export async function POST(request: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.LLM_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY não configurada." }, { status: 500 });
+    return NextResponse.json({ error: "LLM_API_KEY não configurada." }, { status: 500 });
   }
 
   const supabase = await createClient();
@@ -27,7 +30,7 @@ export async function POST(request: Request) {
   // RLS garante que só o dono (ou admin) lê este agente.
   const { data: agent } = await supabase
     .from("agents")
-    .select("id, display_name, system_prompt, model")
+    .select("id, display_name, system_prompt, model, tone, skills, business_profile")
     .eq("id", agentId)
     .maybeSingle();
   if (!agent) return NextResponse.json({ error: "Agente não encontrado." }, { status: 404 });
@@ -69,10 +72,15 @@ export async function POST(request: Request) {
         displayName: agent.display_name,
         systemPrompt: agent.system_prompt,
         model: agent.model,
+        tone: agent.tone,
+        skills: agent.skills,
+        businessProfile: agent.business_profile,
       },
       history: (history ?? []) as ChatMessage[],
       userMessage,
       apiKey,
+      baseURL: LLM_BASE_URL,
+      model: process.env.LLM_MODEL,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro ao chamar o modelo.";

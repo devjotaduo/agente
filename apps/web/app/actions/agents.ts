@@ -14,7 +14,7 @@ export interface UpdateAgentInput {
   business_profile?: AgentBusinessProfile;
 }
 
-/** Atualiza voz/nome/modelo do agente. RLS garante que só dono ou admin consegue. */
+/** Atualiza voz/nome/tom/skills do agente. RLS garante que só dono ou admin consegue. */
 export async function updateAgent(input: UpdateAgentInput): Promise<{ ok?: true; error?: string }> {
   const supabase = await createClient();
   const { error } = await supabase

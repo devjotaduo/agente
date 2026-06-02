@@ -1,4 +1,4 @@
-// Tipos de dominio compartilhados entre web e worker.
+// Tipos de domínio compartilhados entre web e worker.
 export type {
   Database,
   Json,
@@ -19,18 +19,6 @@ export type ConnStatus =
   | "error";
 
 export type ChatRole = "user" | "assistant";
-
-export interface AgentConfig {
-  id: string;
-  /** Nome pelo qual o agente atende. */
-  displayName: string;
-  /** A voz: instrucoes de como o agente responde/age. */
-  systemPrompt: string;
-  /** Tom curto escolhido no painel, quando existir. */
-  tone?: string | null;
-  /** Modelo LLM. */
-  model: string;
-}
 
 export interface AgentCatalogItem {
   name?: string;
@@ -59,6 +47,22 @@ export interface AgentBusinessProfile {
     payment?: string;
     bookingRequiredData?: string;
   };
+}
+
+export interface AgentConfig {
+  id: string;
+  /** Nome pelo qual o agente atende (ex.: "Júlia"). */
+  displayName: string;
+  /** A "voz": instruções de como o agente responde/age. Vira o system prompt. */
+  systemPrompt: string;
+  /** Modelo do LLM (ex.: "qwen-plus"). */
+  model: string;
+  /** Tom de voz (ex.: "amigável", "formal"). Opcional. */
+  tone?: string | null;
+  /** Habilidades/competências do agente. Opcional. */
+  skills?: string[];
+  /** Dados opcionais da empresa e detalhes do template para contextualizar respostas. */
+  businessProfile?: AgentBusinessProfile | null;
 }
 
 export interface ChatMessage {
