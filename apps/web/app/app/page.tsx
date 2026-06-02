@@ -20,12 +20,6 @@ export default async function ClientHome() {
   const conn = await getConnection(agent.id);
 
   return (
-<<<<<<< HEAD
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">{agent.display_name}</h1>
-        <p className="text-sm text-muted">Configure, teste e conecte seu agente seguindo os passos.</p>
-=======
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -60,7 +54,6 @@ export default async function ClientHome() {
             </CardDescription>
           </Card>
         </Link>
->>>>>>> parent of cb6ee27 (Add agent wizard, business profile & worker)
       </div>
     </div>
   );

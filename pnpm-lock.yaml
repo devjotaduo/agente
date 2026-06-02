@@ -93,6 +93,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.40.1
         version: 0.40.1
+      openai:
+        specifier: ^6.39.1
+        version: 6.39.1(ws@8.21.0)
     devDependencies:
       typescript:
         specifier: ^5.7.3
@@ -1540,6 +1543,18 @@ packages:
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
     engines: {node: '>=14.0.0'}
+
+  openai@6.39.1:
+    resolution: {integrity: sha512-z3dO9fEWOXBzlXynVb/xZ/tujzUjFWQWn3C0n0mw6Vo0zJTbEkaN4b2cLWjhJ6haJQx8LlREoafHRl+Gu/Hl+A==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -3172,6 +3187,10 @@ snapshots:
       opus-decoder: 0.7.11
 
   on-exit-leak-free@2.1.2: {}
+
+  openai@6.39.1(ws@8.21.0):
+    optionalDependencies:
+      ws: 8.21.0
 
   optionator@0.9.4:
     dependencies:

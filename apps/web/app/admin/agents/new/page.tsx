@@ -10,11 +10,7 @@ export default async function NewAgentPage() {
     .order("name");
 
   return (
-<<<<<<< HEAD
-    <div className="mx-auto max-w-6xl space-y-6">
-=======
     <div className="mx-auto max-w-2xl space-y-6">
->>>>>>> parent of cb6ee27 (Add agent wizard, business profile & worker)
       <div>
         <h1 className="text-2xl font-semibold">Novo agente</h1>
         <p className="text-sm text-muted">

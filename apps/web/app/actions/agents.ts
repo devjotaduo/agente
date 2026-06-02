@@ -2,12 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import type { AgentBusinessProfile } from "@jotaduo/shared";
 
 export interface UpdateAgentInput {
   id: string;
   display_name: string;
   system_prompt: string;
   model?: string;
+  tone?: string;
+  skills?: string[];
+  business_profile?: AgentBusinessProfile;
 }
 
 /** Atualiza voz/nome/modelo do agente. RLS garante que só dono ou admin consegue. */
@@ -19,6 +23,9 @@ export async function updateAgent(input: UpdateAgentInput): Promise<{ ok?: true;
       display_name: input.display_name.trim(),
       system_prompt: input.system_prompt,
       ...(input.model ? { model: input.model } : {}),
+      ...(input.tone !== undefined ? { tone: input.tone.trim() } : {}),
+      ...(input.skills !== undefined ? { skills: input.skills } : {}),
+      ...(input.business_profile !== undefined ? { business_profile: input.business_profile } : {}),
     })
     .eq("id", input.id);
 
