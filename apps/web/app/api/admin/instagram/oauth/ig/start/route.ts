@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { buildInstagramLoginAuthUrl } from "@jotaduo/shared";
-import { createClient } from "@/lib/supabase/server";
+import { authorizeAgentAccess } from "@/lib/agent-access";
 
 export const runtime = "nodejs";
 
@@ -9,23 +9,16 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const agentId = (url.searchParams.get("agentId") ?? "").trim();
-  const back = `/admin/agents/${agentId}`;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL("/login", url.origin));
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.redirect(new URL("/app", url.origin));
+  const actor = await authorizeAgentAccess(agentId);
+  if (!actor) return NextResponse.redirect(new URL("/login", url.origin));
+  const back = actor.isAdmin ? `/admin/posters?agent=${agentId}` : "/app/posters";
+  const backErr = (msg: string) =>
+    new URL(`${back}${back.includes("?") ? "&" : "?"}ig_error=${encodeURIComponent(msg)}`, url.origin);
 
   const appId = process.env.INSTAGRAM_APP_ID;
-  if (!appId) {
-    return NextResponse.redirect(
-      new URL(`${back}?ig_error=${encodeURIComponent("INSTAGRAM_APP_ID não configurado no servidor.")}`, url.origin),
-    );
-  }
-  if (!agentId) return NextResponse.redirect(new URL("/admin", url.origin));
+  if (!appId) return NextResponse.redirect(backErr("INSTAGRAM_APP_ID não configurado no servidor."));
+  if (!agentId) return NextResponse.redirect(new URL("/", url.origin));
 
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? url.origin;
   const redirectUri = `${origin}/api/admin/instagram/oauth/ig/callback`;

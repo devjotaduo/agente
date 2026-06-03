@@ -1,26 +1,16 @@
 import { NextResponse } from "next/server";
 import { fetchInstagramAccount } from "@jotaduo/shared";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { authorizeAgentAccess } from "@/lib/agent-access";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  // 1) Admin guard.
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.json({ error: "Apenas admin." }, { status: 403 });
-
-  // 2) Payload.
+  // 1) Payload.
   const body = await request.json().catch(() => null);
   const agentId: string = (body?.agentId ?? "").trim();
   const igUserId: string = (body?.igUserId ?? "").trim();
   const accessToken: string = (body?.accessToken ?? "").trim();
-  // Opcional: data de expiração informada pelo admin (token de 60 dias).
   const tokenExpiresAt: string | null = body?.tokenExpiresAt || null;
 
   if (!agentId || !igUserId || !accessToken) {
@@ -29,6 +19,10 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+
+  // 2) Autorização: admin ou dono do agente.
+  const actor = await authorizeAgentAccess(agentId);
+  if (!actor) return NextResponse.json({ error: "Sem acesso a este agente." }, { status: 403 });
 
   const admin = createAdminClient();
 

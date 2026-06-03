@@ -1,22 +1,13 @@
 import { NextResponse } from "next/server";
 import { publishPhotoToInstagram } from "@jotaduo/shared";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { authorizeAgentAccess } from "@/lib/agent-access";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
-  // 1) Admin guard.
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.json({ error: "Apenas admin." }, { status: 403 });
-
-  // 2) Payload. Permite sobrescrever a legenda no momento de publicar.
+  // 1) Payload. Permite sobrescrever a legenda no momento de publicar.
   const body = await request.json().catch(() => null);
   const posterId: string = (body?.posterId ?? "").trim();
   const captionOverride: string | undefined =
@@ -27,13 +18,17 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
 
-  // 3) Carrega o pôster.
+  // 2) Carrega o pôster.
   const { data: poster } = await admin
     .from("posters")
     .select("id, agent_id, image_url, caption, status")
     .eq("id", posterId)
     .maybeSingle();
   if (!poster) return NextResponse.json({ error: "Pôster não encontrado." }, { status: 404 });
+
+  // 3) Autorização: admin ou dono do agente.
+  const actor = await authorizeAgentAccess(poster.agent_id);
+  if (!actor) return NextResponse.json({ error: "Sem acesso a este pôster." }, { status: 403 });
   if (!poster.image_url) {
     return NextResponse.json({ error: "Pôster ainda não tem imagem pronta." }, { status: 400 });
   }

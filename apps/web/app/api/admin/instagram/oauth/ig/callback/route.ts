@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectInstagramLogin } from "@jotaduo/shared";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { authorizeAgentAccess } from "@/lib/agent-access";
 
 export const runtime = "nodejs";
 
@@ -15,15 +15,12 @@ export async function GET(request: Request) {
   const dot = state.indexOf(".");
   const nonce = dot > 0 ? state.slice(0, dot) : "";
   const agentId = dot > 0 ? state.slice(dot + 1) : "";
-  const back = (qs: string) => new URL(`/admin/agents/${agentId}${qs}`, url.origin);
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL("/login", url.origin));
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.redirect(new URL("/app", url.origin));
+  const actor = await authorizeAgentAccess(agentId);
+  if (!actor) return NextResponse.redirect(new URL("/login", url.origin));
+  const basePath = actor.isAdmin ? `/admin/posters?agent=${agentId}` : "/app/posters";
+  const back = (qs: string) =>
+    new URL(basePath + qs.replace(/^\?/, basePath.includes("?") ? "&" : "?"), url.origin);
 
   if (metaError) return NextResponse.redirect(back(`?ig_error=${encodeURIComponent(metaError)}`));
 

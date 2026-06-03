@@ -7,7 +7,10 @@ export default async function ClientLayout({ children }: { children: React.React
     <Shell
       home="/app"
       email={profile.email}
-      nav={[{ href: "/app", label: "Meu agente" }]}
+      nav={[
+        { href: "/app", label: "Meu agente" },
+        { href: "/app/posters", label: "Posts" },
+      ]}
     >
       {children}
     </Shell>

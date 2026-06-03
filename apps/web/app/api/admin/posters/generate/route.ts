@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildPosterCreative, generatePosterImage } from "@jotaduo/shared";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { authorizeAgentAccess } from "@/lib/agent-access";
 
 export const runtime = "nodejs";
 export const maxDuration = 120; // geração de imagem é assíncrona (polling)
@@ -19,20 +19,7 @@ function extFromContentType(ct: string): string {
 }
 
 export async function POST(request: Request) {
-  // 1) Admin guard.
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.json({ error: "Apenas admin." }, { status: 403 });
-
-  if (!LLM_API_KEY) {
-    return NextResponse.json({ error: "LLM_API_KEY não configurada no servidor." }, { status: 500 });
-  }
-
-  // 2) Payload.
+  // 1) Payload.
   const body = await request.json().catch(() => null);
   const agentId: string = (body?.agentId ?? "").trim();
   const briefing: string = (body?.briefing ?? "").trim();
@@ -41,6 +28,14 @@ export async function POST(request: Request) {
   const size: string = ALLOWED_SIZES.has(body?.size) ? body.size : "1080x1080";
   if (!agentId || !briefing) {
     return NextResponse.json({ error: "agentId e briefing são obrigatórios." }, { status: 400 });
+  }
+
+  // 2) Autorização: admin ou dono do agente.
+  const actor = await authorizeAgentAccess(agentId);
+  if (!actor) return NextResponse.json({ error: "Sem acesso a este agente." }, { status: 403 });
+
+  if (!LLM_API_KEY) {
+    return NextResponse.json({ error: "LLM_API_KEY não configurada no servidor." }, { status: 500 });
   }
 
   const admin = createAdminClient();
@@ -56,7 +51,7 @@ export async function POST(request: Request) {
   // 4) Cria o registro do pôster (status 'generating') — o painel acompanha via realtime.
   const { data: poster, error: insErr } = await admin
     .from("posters")
-    .insert({ agent_id: agentId, briefing, status: "generating", created_by: user.id })
+    .insert({ agent_id: agentId, briefing, status: "generating", created_by: actor.userId })
     .select("id")
     .single();
   if (insErr || !poster) {
