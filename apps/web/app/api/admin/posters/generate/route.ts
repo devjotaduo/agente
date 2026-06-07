@@ -10,6 +10,13 @@ const LLM_API_KEY = process.env.LLM_API_KEY;
 const LLM_BASE_URL =
   process.env.LLM_BASE_URL ?? "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
 const LLM_MODEL = process.env.LLM_MODEL ?? "qwen-plus";
+
+// Geração de IMAGEM usa config própria (endpoint nativo DashScope/Qwen-Image),
+// que pode diferir do provedor de TEXTO (ex.: texto no OpenRouter, imagem no
+// DashScope). Cai de volta nas vars de texto p/ compatibilidade.
+const IMAGE_API_KEY = process.env.IMAGE_API_KEY ?? process.env.LLM_API_KEY;
+const IMAGE_BASE_URL =
+  process.env.IMAGE_BASE_URL ?? process.env.LLM_BASE_URL ?? "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
 const IMAGE_MODEL = process.env.IMAGE_MODEL ?? "qwen-image-2.0";
 
 function extFromContentType(ct: string): string {
@@ -36,6 +43,12 @@ export async function POST(request: Request) {
 
   if (!LLM_API_KEY) {
     return NextResponse.json({ error: "LLM_API_KEY não configurada no servidor." }, { status: 500 });
+  }
+  if (!IMAGE_API_KEY) {
+    return NextResponse.json(
+      { error: "IMAGE_API_KEY (ou LLM_API_KEY) não configurada para gerar imagem." },
+      { status: 500 },
+    );
   }
 
   const admin = createAdminClient();
@@ -78,11 +91,11 @@ export async function POST(request: Request) {
       .update({ image_prompt: creative.imagePrompt, caption: creative.caption })
       .eq("id", posterId);
 
-    // 6) Gera a imagem (DashScope) — bytes para rehospedar no Storage.
+    // 6) Gera a imagem (DashScope/Qwen-Image) — bytes para rehospedar no Storage.
     const img = await generatePosterImage({
       prompt: creative.imagePrompt,
-      apiKey: LLM_API_KEY,
-      baseURL: LLM_BASE_URL,
+      apiKey: IMAGE_API_KEY,
+      baseURL: IMAGE_BASE_URL,
       model: IMAGE_MODEL,
       size,
     });

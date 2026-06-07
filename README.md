@@ -16,7 +16,8 @@ supabase/migrations   Schema + RLS (isolamento multi-tenant)
 ```
 
 - **Banco/Auth:** Supabase (projeto `jotaduo-agentes` / `ygfawmsdsktoenejvxii`). Isolamento por Row Level Security.
-- **LLM:** provedor compatível com a API da OpenAI, via `baseURL` configurável (Qwen/DashScope, OpenRouter, Groq, Gemini…). Modelo padrão `qwen-plus`. A "voz" do agente é o system prompt.
+- **LLM (texto):** Qwen por padrão, via provedor compatível com a API da OpenAI (`baseURL` configurável — DashScope nativo, OpenRouter, Groq, Gemini…). A "voz" do agente é o system prompt. Vars: `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL`.
+- **LLM (imagem dos pôsteres):** Qwen-Image via endpoint **nativo do DashScope** — config própria (`IMAGE_API_KEY` / `IMAGE_BASE_URL` / `IMAGE_MODEL`), independente do texto, pois roteadores como OpenRouter não geram imagem. Se vazio, cai de volta nas vars `LLM_*`.
 - **WhatsApp:** Baileys (não-oficial, QR code). A sessão é persistida no Supabase (não em disco).
 
 ## Setup local
