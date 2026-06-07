@@ -6,6 +6,7 @@ import {
   forceReconnect,
   isConnected,
 } from "./baileys/connectionManager.js";
+import { isBridgeEnabled, startBridgeServer } from "./bridge.js";
 
 // Resiliência: o Baileys pode lançar erros síncronos dentro de handlers do
 // WebSocket (ex.: falha de descriptografia de um frame). Sem isto, um erro de
@@ -72,6 +73,12 @@ async function reconcile() {
 async function main() {
   requireEnv();
   console.log("[worker] iniciando…");
+
+  // Ponte QwenPaw (opt-in): sobe o servidor /send que o QwenPaw chama p/ enviar.
+  if (isBridgeEnabled()) {
+    startBridgeServer();
+    console.log("[worker] modo ponte QwenPaw ATIVO (WHATSAPP_BRIDGE=qwenpaw).");
+  }
 
   // Reconciliação inicial (resume sessões já conectadas).
   await reconcile();

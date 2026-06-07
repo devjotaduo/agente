@@ -11,6 +11,7 @@ import type { TablesUpdate } from "@jotaduo/shared/types";
 import { supabase } from "../lib/supabase.js";
 import { useSupabaseAuthState, clearSupabaseAuthState } from "./supabaseAuthState.js";
 import { handleIncoming } from "../handleIncoming.js";
+import { isBridgeEnabled, forwardToQwenpaw } from "../bridge.js";
 
 // `baileys` é CJS; o default export (makeWASocket) não resolve via import ESM.
 const makeWASocket = createRequire(import.meta.url)("baileys")
@@ -231,11 +232,19 @@ export async function connectAgent(agentId: string): Promise<void> {
           .maybeSingle();
         if (!agent || !agent.is_active) continue;
 
-        await sock.sendPresenceUpdate("composing", jid).catch(() => {});
-        const reply = await handleIncoming(agent, jid, text);
-        await sock.sendPresenceUpdate("paused", jid).catch(() => {});
-        if (reply) {
-          await sock.sendMessage(jid, { text: reply });
+        // Ponte QwenPaw (opt-in): encaminha ao QwenPaw e a resposta volta async
+        // pelo /send da bridge. Senão, responde com o núcleo local (generateReply).
+        if (isBridgeEnabled()) {
+          await sock.sendPresenceUpdate("composing", jid).catch(() => {});
+          await forwardToQwenpaw(agentId, jid, text);
+          await sock.sendPresenceUpdate("paused", jid).catch(() => {});
+        } else {
+          await sock.sendPresenceUpdate("composing", jid).catch(() => {});
+          const reply = await handleIncoming(agent, jid, text);
+          await sock.sendPresenceUpdate("paused", jid).catch(() => {});
+          if (reply) {
+            await sock.sendMessage(jid, { text: reply });
+          }
         }
       }
     });
@@ -293,4 +302,23 @@ export async function disconnectAgent(agentId: string): Promise<void> {
 
 export function isConnected(agentId: string): boolean {
   return sockets.has(agentId) || connecting.has(agentId);
+}
+
+/**
+ * Envia um texto pelo socket do agente indicado. Usado pela ponte QwenPaw
+ * (endpoint /send): a resposta do agente volta async e é entregue no WhatsApp.
+ */
+export async function sendText(agentId: string, jid: string, text: string): Promise<boolean> {
+  const sock = sockets.get(agentId);
+  if (!sock) {
+    console.error(`[worker] sendText: socket não encontrado para agente ${agentId}`);
+    return false;
+  }
+  try {
+    await sock.sendMessage(jid, { text });
+    return true;
+  } catch (e) {
+    console.error(`[worker] sendText erro (${agentId} -> ${jid}):`, e);
+    return false;
+  }
 }
