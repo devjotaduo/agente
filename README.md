@@ -11,20 +11,20 @@ Plataforma SaaS multi-tenant para criar agentes de IA de atendimento que respond
 ```
 apps/web              Next.js 15 (App Router) — painel — deploy: Vercel
 apps/whatsapp-worker  Node + Baileys — conexões WhatsApp — deploy: Railway/Render
-packages/shared       Núcleo de IA (generateReply/Claude) + tipos — usado por web e worker
+packages/shared       Núcleo de IA (generateReply) + tipos — usado por web e worker
 supabase/migrations   Schema + RLS (isolamento multi-tenant)
 ```
 
 - **Banco/Auth:** Supabase (projeto `jotaduo-agentes` / `ygfawmsdsktoenejvxii`). Isolamento por Row Level Security.
-- **LLM:** Anthropic Claude (`claude-haiku-4-5` por padrão). A "voz" do agente é o system prompt.
+- **LLM:** provedor compatível com a API da OpenAI, via `baseURL` configurável (Qwen/DashScope, OpenRouter, Groq, Gemini…). Modelo padrão `qwen-plus`. A "voz" do agente é o system prompt.
 - **WhatsApp:** Baileys (não-oficial, QR code). A sessão é persistida no Supabase (não em disco).
 
 ## Setup local
 
 1. **Instalar deps:** `pnpm install`
 2. **Variáveis de ambiente** — preencher os segredos:
-   - `apps/web/.env.local`: `SUPABASE_SERVICE_ROLE_KEY` e `ANTHROPIC_API_KEY`
-   - `apps/whatsapp-worker/.env`: `SUPABASE_SERVICE_ROLE_KEY` e `ANTHROPIC_API_KEY`
+   - `apps/web/.env.local`: `SUPABASE_SERVICE_ROLE_KEY`, `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`
+   - `apps/whatsapp-worker/.env`: `SUPABASE_SERVICE_ROLE_KEY`, `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`
    - (URL e chave anon já estão preenchidas.)
 3. **Criar o admin inicial:**
    ```
